@@ -125,27 +125,8 @@ export function LoginForm() {
                     inputMode="numeric"
                     maxLength={1}
                     value={digit ? '●' : ''}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 1)
-                      if (value) {
-                        handlePinChange(index, value)
-                      } else {
-                        const newPin = [...pin]
-                        newPin[index] = ''
-                        setPin(newPin)
-                        if (index > 0) {
-                          inputRefs.current[index - 1]?.focus()
-                        }
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Backspace' && !pin[index] && index > 0) {
-                        inputRefs.current[index - 1]?.focus()
-                        const newPin = [...pin]
-                        newPin[index - 1] = ''
-                        setPin(newPin)
-                      }
-                    }}
+                    onChange={(e) => handlePinChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
                     disabled={isLoading}
                     className="w-12 h-12 text-center text-xl font-mono font-bold bg-transparent border-2 border-primary/30 text-foreground rounded transition-all duration-300 focus-visible:border-primary focus-visible:ring-0 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />

@@ -25,7 +25,7 @@ const APP_ROOT = new URL('./', import.meta.url)
  */
 const ignitor = new Ignitor(APP_ROOT, { importer: (url) => import(url) })
 
-// Tap into app creation to manually register providers
+// Tap into app creation to manually register providers and routes
 ignitor.tap(async (app) => {
   await app.init()
   // Manually register the app provider since providers aren't being loaded from .adonisrc.json
@@ -33,18 +33,17 @@ ignitor.tap(async (app) => {
   appProvider.register()
   // Store provider to boot it later
   app.container.bind('_app_provider', () => appProvider)
+  
+  // Register routes after app is booted
+  app.booted(async () => {
+    const router = await app.container.make('router')
+    router.post('/api/auth/login', '#controllers/auth_controller.login')
+    router.get('/api/auth/verify', '#controllers/auth_controller.verify')
+  })
 })
 
 try {
   const httpServer = ignitor.httpServer()
-  // Get the app instance and boot the provider
-  const app = ignitor.getApp()
-  if (app) {
-    const appProvider = await app.container.make('_app_provider')
-    if (appProvider) {
-      await appProvider.boot()
-    }
-  }
   await httpServer.start()
 } catch (error) {
   process.exitCode = 1
