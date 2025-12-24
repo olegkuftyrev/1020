@@ -25,21 +25,45 @@ const APP_ROOT = new URL('./', import.meta.url)
  */
 const ignitor = new Ignitor(APP_ROOT, { importer: (url) => import(url) })
 
-// Tap into app creation to manually register providers and routes
+// Tap into app creation to manually register providers
 ignitor.tap(async (app) => {
   await app.init()
   // Manually register the app provider since providers aren't being loaded from .adonisrc.json
   const appProvider = new AppServiceProvider(app)
   appProvider.register()
-  // Store provider to boot it later
-  app.container.bind('_app_provider', () => appProvider)
   
-  // Register routes after app is booted
+  // Boot provider after app is booted
   app.booted(async () => {
+    await appProvider.boot()
+  })
+  
+  // Register routes and middleware when app starts (this happens in HttpServerProcess.app.start())
+  const originalStart = app.start.bind(app)
+  app.start = async (callback) => {
+    // Get router and server
     const router = await app.container.make('router')
+    const server = await app.container.make('server')
+    
+    // Ensure bodyparser middleware is registered on router
+    router.use([
+      () => import('@adonisjs/core/bodyparser_middleware'),
+    ])
+    
+    // Register error handler
+    server.errorHandler(() => import('#exceptions/handler'))
+    
+    // Register server middleware
+    server.use([
+      () => import('#middleware/container_bindings_middleware'),
+    ])
+    
+    // Register routes before the server starts
     router.post('/api/auth/login', '#controllers/auth_controller.login')
     router.get('/api/auth/verify', '#controllers/auth_controller.verify')
-  })
+    
+    // Call original start
+    return originalStart(callback)
+  }
 })
 
 try {

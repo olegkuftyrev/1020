@@ -23,9 +23,23 @@ export function LoginForm() {
       setPin(newPin)
       setError('') // Clear error when user starts typing
       
-      // Move to next input if not last
+      // Move to next input if not last - multiple strategies for bulletproof focus
       if (index < 5) {
-        inputRefs.current[index + 1]?.focus()
+        // Strategy 1: Immediate attempt
+        const nextInput = inputRefs.current[index + 1]
+        if (nextInput) {
+          nextInput.focus()
+          // Strategy 2: If immediate didn't work, try after a tiny delay
+          setTimeout(() => {
+            if (document.activeElement !== nextInput) {
+              nextInput.focus()
+              // Strategy 3: Last resort - try again after animation frame
+              requestAnimationFrame(() => {
+                nextInput.focus()
+              })
+            }
+          }, 0)
+        }
       }
     } else {
       // Handle backspace/delete
@@ -35,7 +49,38 @@ export function LoginForm() {
       
       // Move to previous input if current is empty
       if (index > 0) {
-        inputRefs.current[index - 1]?.focus()
+        const prevInput = inputRefs.current[index - 1]
+        if (prevInput) {
+          prevInput.focus()
+          setTimeout(() => {
+            if (document.activeElement !== prevInput) {
+              prevInput.focus()
+            }
+          }, 0)
+        }
+      }
+    }
+  }
+
+  const handleInput = (index: number, e: React.FormEvent<HTMLInputElement>) => {
+    const target = e.currentTarget
+    const value = target.value.replace(/\D/g, '').slice(0, 1)
+    
+    if (value) {
+      const newPin = [...pin]
+      newPin[index] = value
+      setPin(newPin)
+      setError('')
+      
+      // Immediately focus next input on input event (more reliable than onChange)
+      if (index < 5) {
+        const nextInput = inputRefs.current[index + 1]
+        if (nextInput) {
+          // Multiple attempts to ensure focus works
+          nextInput.focus()
+          setTimeout(() => nextInput.focus(), 0)
+          requestAnimationFrame(() => nextInput.focus())
+        }
       }
     }
   }
@@ -126,6 +171,7 @@ export function LoginForm() {
                     maxLength={1}
                     value={digit ? '●' : ''}
                     onChange={(e) => handlePinChange(index, e.target.value)}
+                    onInput={(e) => handleInput(index, e)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     disabled={isLoading}
                     className="w-12 h-12 text-center text-xl font-mono font-bold bg-transparent border-2 border-primary/30 text-foreground rounded transition-all duration-300 focus-visible:border-primary focus-visible:ring-0 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -144,6 +190,7 @@ export function LoginForm() {
                     maxLength={1}
                     value={digit ? 'X' : ''}
                     onChange={(e) => handlePinChange(index, e.target.value)}
+                    onInput={(e) => handleInput(index, e)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
                     disabled={isLoading}
