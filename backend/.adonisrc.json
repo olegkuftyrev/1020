@@ -1,0 +1,33 @@
+{
+  "typescript": true,
+  "metaFiles": [
+    ".env",
+    ".adonisrc.json",
+    {
+      "pattern": "public/**",
+      "reloadServer": false
+    }
+  ],
+  "commands": [
+    "./commands"
+  ],
+  "commandsAliases": {},
+  "preloads": [
+    "./start/routes.ts",
+    "./start/kernel.ts"
+  ],
+  "providers": [
+    "@adonisjs/core"
+  ],
+  "directories": {
+    "config": "./config",
+    "commands": "./commands",
+    "contracts": "./contracts",
+    "controllers": "./app/controllers",
+    "exceptions": "./app/exceptions",
+    "middleware": "./app/middleware",
+    "models": "./app/models",
+    "services": "./app/services",
+    "validators": "./app/validators"
+  }
+}

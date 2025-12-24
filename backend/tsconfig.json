@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "outDir": "./build",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"],
+    "baseUrl": "./",
+    "paths": {
+      "#app/*": ["./app/*"],
+      "#config/*": ["./config/*"],
+      "#start/*": ["./start/*"],
+      "#contracts/*": ["./contracts/*"],
+      "#controllers/*": ["./app/controllers/*"],
+      "#exceptions/*": ["./app/exceptions/*"],
+      "#middleware/*": ["./app/middleware/*"],
+      "#models/*": ["./app/models/*"],
+      "#services/*": ["./app/services/*"],
+      "#validators/*": ["./app/validators/*"]
+    }
+  },
+  "include": ["./**/*"],
+  "exclude": ["./build", "./node_modules", "./tmp"]
+}
