@@ -11,6 +11,9 @@
 
 import 'reflect-metadata'
 import { Ignitor, prettyPrintError } from '@adonisjs/core'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 /**
  * URL to the application root. AdonisJS need it to resolve
@@ -25,6 +28,12 @@ const APP_ROOT = new URL('../', import.meta.url)
 const ignitor = new Ignitor(APP_ROOT, { importer: (url) => import(url) })
 
 try {
+  // Ensure .adonisrc.json is read by manually setting rc contents
+  const app = ignitor.createApp('web')
+  const rcPath = join(fileURLToPath(APP_ROOT), 'backend', '.adonisrc.json')
+  const rcContents = JSON.parse(readFileSync(rcPath, 'utf-8'))
+  app.rcContents(rcContents)
+  
   const httpServer = ignitor.httpServer()
   await httpServer.start()
 } catch (error) {
