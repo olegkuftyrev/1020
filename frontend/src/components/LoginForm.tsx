@@ -94,27 +94,66 @@ export function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center iron-bg-pattern p-4">
-      <div className="w-full max-w-md">
-        <div className="iron-border rounded-lg p-8 bg-card/50 backdrop-blur-sm iron-card-hover">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-2 text-primary iron-text-glow">
+    <div className="min-h-screen flex items-center justify-center iron-bg-pattern p-0 md:p-4">
+      <div className="w-full max-w-md md:max-w-md w-full h-screen md:h-auto flex flex-col md:block">
+        <div className="md:iron-border md:rounded-lg p-4 md:p-8 md:bg-card/50 md:backdrop-blur-sm md:iron-card-hover flex-1 flex flex-col justify-center md:block">
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-primary iron-text-glow">
               PANDA EXPRESS
             </h1>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">
+            <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-3 md:mb-4">
               DASHBOARD ACCESS
             </h2>
             <div className="h-1 w-24 bg-primary iron-glow mx-auto"></div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4 group">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6 flex-1 flex flex-col justify-center md:block">
+            <div className="space-y-3 md:space-y-4 group relative">
               <label 
-                className="text-sm font-medium text-foreground block text-center transition-all duration-300 group-hover:text-primary group-hover:iron-text-glow"
+                className="text-sm font-medium text-foreground block text-center transition-all duration-300 md:group-hover:text-primary md:group-hover:iron-text-glow"
               >
                 PIN CODE
               </label>
-              <div className="flex justify-center gap-3">
+              
+              {/* Mobile: Individual square inputs (minimal style) */}
+              <div className="md:hidden flex justify-center gap-2">
+                {pin.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (inputRefs.current[index] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit ? '●' : ''}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 1)
+                      if (value) {
+                        handlePinChange(index, value)
+                      } else {
+                        const newPin = [...pin]
+                        newPin[index] = ''
+                        setPin(newPin)
+                        if (index > 0) {
+                          inputRefs.current[index - 1]?.focus()
+                        }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' && !pin[index] && index > 0) {
+                        inputRefs.current[index - 1]?.focus()
+                        const newPin = [...pin]
+                        newPin[index - 1] = ''
+                        setPin(newPin)
+                      }
+                    }}
+                    disabled={isLoading}
+                    className="w-12 h-12 text-center text-xl font-mono font-bold bg-transparent border-2 border-primary/30 text-foreground rounded transition-all duration-300 focus-visible:border-primary focus-visible:ring-0 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                ))}
+              </div>
+              
+              {/* Desktop: Individual square inputs */}
+              <div className="hidden md:flex justify-center gap-3">
                 {pin.map((digit, index) => (
                   <input
                     key={index}
@@ -143,7 +182,7 @@ export function LoginForm() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 iron-glow font-semibold py-6 text-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,200,255,0.5)] active:scale-[0.98]"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 iron-glow font-semibold py-4 md:py-6 text-base md:text-lg transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_30px_rgba(0,200,255,0.5)] active:scale-[0.98]"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -156,7 +195,7 @@ export function LoginForm() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 md:mt-6 text-center">
             <p className="text-xs text-muted-foreground">
               Internal access only
             </p>

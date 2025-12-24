@@ -42,7 +42,7 @@ export default {
   PORT: Number(process.env.PORT || 3333),
   HOST: process.env.HOST || '0.0.0.0',
   NODE_ENV: process.env.NODE_ENV || 'development',
-  APP_KEY: new Secret(process.env.APP_KEY || 'change-me'),
+  APP_KEY: new Secret(process.env.APP_KEY || 'change-me-in-production-use-a-secure-random-key-at-least-32-characters-long'),
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
   DATABASE_URL: getEnvVar('DATABASE_URL', 'postgresql://user:password@localhost:5432/panda_express_db?schema=public'),
   AUTH_PASSWORD: getEnvVar('AUTH_PASSWORD', 'password123'),

@@ -17,7 +17,7 @@
     "./start/kernel.ts"
   ],
   "providers": [
-    "@adonisjs/core/providers/app_provider"
+    "@adonisjs/core"
   ],
   "directories": {
     "config": "./config",
