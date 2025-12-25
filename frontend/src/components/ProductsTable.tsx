@@ -277,6 +277,22 @@ export function ProductsTable({ data }: ProductsTableProps) {
     {
       id: "periodColumn",
       header: selectedPeriod === "daily" ? "$12K" : "$82K",
+      accessorFn: (row) => {
+        const w38 = parseFloat(row.w38) || 0
+        const w39 = parseFloat(row.w39) || 0
+        const w40 = parseFloat(row.w40) || 0
+        const w41 = parseFloat(row.w41) || 0
+        const avg = (w38 + w39 + w40 + w41) / 4
+        const conversion = parseFloat(row.conversion || '0') || 0
+        
+        if (conversion === 0) {
+          return 0
+        }
+        
+        const csPer1k = avg / conversion
+        const multiplier = selectedPeriod === "daily" ? 12 : 82
+        return csPer1k * multiplier
+      },
       cell: ({ row }) => {
         const w38 = parseFloat(row.original.w38) || 0
         const w39 = parseFloat(row.original.w39) || 0
