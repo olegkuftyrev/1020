@@ -23,6 +23,7 @@ export interface ProductData {
   w40: string
   w41: string
   conversion?: string // Новая колонка, пока пустая
+  group?: string // Группа продукта (WIC, Appetizers, Others)
 }
 
 export function parseProductRow(row: string): ProductData | null {
@@ -155,11 +156,162 @@ const conversionData: Record<string, string> = {
   'P23001': '500',  // Sauce, Mustard Packets PX
 }
 
+// Определяем продукты группы WIC
+const WIC_PRODUCTS = new Set([
+  'P10002',
+  'P10028',
+  'P10019',
+  'P10027',
+  'P5020',
+  'P5017',
+  'P5007',
+  'P10008',
+  'P10018',
+  'P16032',
+])
+
+// Определяем продукты группы Appetizers
+const APPETIZERS_PRODUCTS = new Set([
+  'P1260',
+  'P1001',
+  'P1004',
+])
+
+// Определяем продукты группы Sides
+const SIDES_PRODUCTS = new Set([
+  'P1102',
+  'P1112',
+])
+
+// Определяем продукты группы Sauce Cart
+const SAUCE_CART_PRODUCTS = new Set([
+  'P1093',
+  'P1566',
+  'P1580',
+  'P1652',
+  'P1295',
+  'P1404',
+  'P1233',
+  'P1249',
+  'P1268',
+])
+
+// Определяем продукты группы Vegetables
+const VEGETABLES_PRODUCTS = new Set([
+  'P19013',
+  'P19016',
+  'P19045',
+  'P19048',
+  'P19054',
+  'P19055',
+  'P19085',
+  'P19147',
+  'P19149',
+  'P19169',
+  'P19186',
+  'P19187',
+  'P19909',
+  'P19910',
+])
+
+// Определяем продукты группы BIBs
+const BIBS_PRODUCTS = new Set([
+  'P25003',
+  'P25004',
+  'P25005',
+  'P25006',
+  'P25027',
+  'P25244',
+  'P25346',
+])
+
+// Определяем продукты группы PCB
+const PCB_PRODUCTS = new Set([
+  'P25421',
+  'P25422',
+  'P25423',
+  'P25424',
+])
+
+// Определяем продукты группы Bottles
+const BOTTLES_PRODUCTS = new Set([
+  'P25908',
+  'P25911',
+  'P25933',
+  'P25943',
+  'P25973',
+  'P25980',
+  'P35040',
+])
+
+// Определяем продукты группы FoH Packaging
+const FOH_PACKAGING_PRODUCTS = new Set([
+  'P35081',
+  'P35126',
+  'P35130',
+  'P35509',
+  'P35508',
+  'P35275',
+])
+
+// Определяем продукты группы FoH
+const FOH_PRODUCTS = new Set([
+  'P1079',
+  'P1107',
+  'P1116',
+  'P1129',
+  'P1131',
+  'P1151',
+  'P1158',
+  'P1272',
+  'P19052',
+  'P2002',
+  'P35048',
+  'P35062',
+  'P35065',
+  'P35149',
+  'P35213',
+  'P35268',
+  'P35269',
+  'P35380',
+  'P35406',
+  'P35432',
+  'P35542',
+  'P35719',
+  'P36029',
+])
+
 export function applyConversionData(products: ProductData[]): ProductData[] {
-  return products.map(product => ({
-    ...product,
-    conversion: conversionData[product.productNumber] || product.conversion || ''
-  }))
+  return products.map(product => {
+    let group = 'Others'
+    if (WIC_PRODUCTS.has(product.productNumber)) {
+      group = 'WIC'
+    } else if (APPETIZERS_PRODUCTS.has(product.productNumber)) {
+      group = 'Appetizers'
+    } else if (SIDES_PRODUCTS.has(product.productNumber)) {
+      group = 'Sides'
+    } else if (SAUCE_CART_PRODUCTS.has(product.productNumber)) {
+      group = 'Sauce Cart'
+    } else if (VEGETABLES_PRODUCTS.has(product.productNumber)) {
+      group = 'Vegetables'
+    } else if (BIBS_PRODUCTS.has(product.productNumber)) {
+      group = 'BIBs'
+    } else if (PCB_PRODUCTS.has(product.productNumber)) {
+      group = 'PCB'
+    } else if (BOTTLES_PRODUCTS.has(product.productNumber)) {
+      group = 'Bottles'
+    } else if (FOH_PACKAGING_PRODUCTS.has(product.productNumber)) {
+      group = 'FoH Packaging'
+    } else if (FOH_PRODUCTS.has(product.productNumber)) {
+      group = 'FoH'
+    }
+    
+    return {
+      ...product,
+      conversion: conversionData[product.productNumber] || product.conversion || '',
+      group
+    }
+  })
 }
 
 function splitIntoProductRows(text: string): string[] {

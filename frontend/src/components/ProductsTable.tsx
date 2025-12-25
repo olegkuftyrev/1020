@@ -4,13 +4,11 @@ import * as React from "react"
 import {
   flexRender,
   getCoreRowModel,
-  getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Settings2 } from "lucide-react"
+import { Settings2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -41,37 +39,15 @@ import { ProductData } from "@/utils/pdfParser"
 const columns: ColumnDef<ProductData>[] = [
   {
     accessorKey: "productNumber",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8"
-        >
-          Product #
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
+    header: "Product #",
     cell: ({ row }) => (
       <div className="font-mono text-primary">{row.getValue("productNumber")}</div>
     ),
-    enableHiding: false, // Нельзя скрыть Product #, так как это основной идентификатор
+    enableHiding: false,
   },
   {
     accessorKey: "productName",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8"
-        >
-          Product Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
+    header: "Product Name",
     cell: ({ row }) => <div>{row.getValue("productName")}</div>,
   },
   {
@@ -169,136 +145,46 @@ interface ProductsTableProps {
   onDataChange?: (updatedData: ProductData[]) => void
 }
 
-export function ProductsTable({ data }: ProductsTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [selectedPeriod, setSelectedPeriod] = React.useState<string>("daily")
-  
-  // По умолчанию показываем только Product # (не скрываемая), Product Name, CS per 1k и новую колонку
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
-    conversion: false,
-    unit: false,
-    w38: false,
-    w39: false,
-    w40: false,
-    w41: false,
-    avg4: false,
-    // productName, csPer1k и periodColumn будут видимы по умолчанию (не указаны в объекте)
-  })
-  const [tableData, setTableData] = React.useState<ProductData[]>(data)
+// Порядок категорий
+const CATEGORY_ORDER: Record<string, number> = {
+  'WIC': 0,
+  'Appetizers': 1,
+  'Sides': 2,
+  'Sauce Cart': 3,
+  'Vegetables': 4,
+  'BIBs': 5,
+  'PCB': 6,
+  'Bottles': 7,
+  'FoH Packaging': 8,
+  'FoH': 9,
+  'Others': 10,
+}
 
-  React.useEffect(() => {
-    setTableData(data)
-  }, [data])
-
-  // Динамические колонки в зависимости от выбранного периода
-  const dynamicColumns: ColumnDef<ProductData>[] = React.useMemo(() => [
-    ...columns,
-    {
-      id: "periodColumn",
-      header: selectedPeriod === "daily" ? "$12K" : "$82K",
-      cell: ({ row }) => {
-        const w38 = parseFloat(row.original.w38) || 0
-        const w39 = parseFloat(row.original.w39) || 0
-        const w40 = parseFloat(row.original.w40) || 0
-        const w41 = parseFloat(row.original.w41) || 0
-        const avg = (w38 + w39 + w40 + w41) / 4
-        const conversion = parseFloat(row.original.conversion || '0') || 0
-        
-        if (conversion === 0) {
-          return (
-            <div className="text-right text-muted-foreground">-</div>
-          )
-        }
-        
-        const csPer1k = avg / conversion
-        const multiplier = selectedPeriod === "daily" ? 12 : 82
-        const result = csPer1k * multiplier
-        
-        return (
-          <div className="text-right font-medium">
-            {result.toFixed(2)}
-          </div>
-        )
-      },
-    },
-  ], [selectedPeriod])
-
+function CategoryTable({
+  category,
+  products,
+  dynamicColumns,
+  columnVisibility,
+}: {
+  category: string
+  products: ProductData[]
+  dynamicColumns: ColumnDef<ProductData>[]
+  columnVisibility: VisibilityState
+}) {
   const table = useReactTable({
-    data: tableData,
+    data: products,
     columns: dynamicColumns,
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     state: {
-      sorting,
       columnVisibility,
     },
   })
 
+  if (products.length === 0) return null
+
   return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center justify-end gap-3">
-        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-[180px] iron-border">
-            <SelectValue placeholder="Select period" />
-          </SelectTrigger>
-          <SelectContent className="bg-card border-primary/20">
-            <SelectItem value="daily">Daily $12K</SelectItem>
-            <SelectItem value="weekly">Weekly $82K</SelectItem>
-          </SelectContent>
-        </Select>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="iron-border hover:iron-glow"
-            >
-              <Settings2 className="mr-2 h-4 w-4" />
-              Columns
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-card border-primary/20">
-            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {table
-              .getAllColumns()
-              .filter(
-                (column) => column.getCanHide()
-              )
-              .map((column) => {
-                // Красивые названия для колонок
-                const columnNames: Record<string, string> = {
-                  productName: "Product Name",
-                  productNumber: "Product #",
-                  unit: "Unit",
-                  w38: "W38 '25",
-                  w39: "W39 '25",
-                  w40: "W40 '25",
-                  w41: "W41 '25",
-                  conversion: "Conversion",
-                  avg4: "AVG4",
-                  csPer1k: "CS per 1k",
-                  periodColumn: selectedPeriod === "daily" ? "$12K" : "$82K",
-                }
-                
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {columnNames[column.id] || column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      
+    <div className="space-y-4">
+      <h3 className="text-xl font-bold text-primary iron-text-glow">{category}</h3>
       <div className="overflow-hidden rounded-lg border border-primary/20">
         <Table>
           <TableHeader>
@@ -350,13 +236,171 @@ export function ProductsTable({ data }: ProductsTableProps) {
           </TableBody>
         </Table>
       </div>
-      
       <div className="px-2">
         <div className="text-sm text-muted-foreground">
-          Total: {data.length} products
+          Total: {products.length} products
         </div>
       </div>
     </div>
   )
 }
 
+export function ProductsTable({ data }: ProductsTableProps) {
+  const [selectedPeriod, setSelectedPeriod] = React.useState<string>("daily")
+  
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+    conversion: false,
+    unit: false,
+    w38: false,
+    w39: false,
+    w40: false,
+    w41: false,
+    avg4: false,
+  })
+
+  // Динамические колонки в зависимости от выбранного периода
+  const dynamicColumns: ColumnDef<ProductData>[] = React.useMemo(() => [
+    ...columns,
+    {
+      id: "periodColumn",
+      header: selectedPeriod === "daily" ? "$12K" : "$82K",
+      cell: ({ row }) => {
+        const w38 = parseFloat(row.original.w38) || 0
+        const w39 = parseFloat(row.original.w39) || 0
+        const w40 = parseFloat(row.original.w40) || 0
+        const w41 = parseFloat(row.original.w41) || 0
+        const avg = (w38 + w39 + w40 + w41) / 4
+        const conversion = parseFloat(row.original.conversion || '0') || 0
+        
+        if (conversion === 0) {
+          return (
+            <div className="text-right text-muted-foreground">-</div>
+          )
+        }
+        
+        const csPer1k = avg / conversion
+        const multiplier = selectedPeriod === "daily" ? 12 : 82
+        const result = csPer1k * multiplier
+        
+        return (
+          <div className="text-right font-medium">
+            {result.toFixed(2)}
+          </div>
+        )
+      },
+    },
+  ], [selectedPeriod])
+
+  // Группируем продукты по категориям
+  const groupedByCategory = React.useMemo(() => {
+    const groups: Record<string, ProductData[]> = {}
+    
+    data.forEach(product => {
+      const category = product.group || 'Others'
+      if (!groups[category]) {
+        groups[category] = []
+      }
+      groups[category].push(product)
+    })
+
+    // Сортируем продукты внутри каждой категории по productNumber
+    Object.keys(groups).forEach(category => {
+      groups[category].sort((a, b) => a.productNumber.localeCompare(b.productNumber))
+    })
+
+    // Сортируем категории по порядку
+    const sortedCategories = Object.keys(groups).sort((a, b) => {
+      const orderA = CATEGORY_ORDER[a] ?? 9
+      const orderB = CATEGORY_ORDER[b] ?? 9
+      return orderA - orderB
+    })
+
+    return sortedCategories.map(category => ({
+      category,
+      products: groups[category],
+    }))
+  }, [data])
+
+  // Создаем временную таблицу для управления видимостью колонок
+  const tempTable = useReactTable({
+    data: data.slice(0, 1), // Используем один элемент для получения структуры колонок
+    columns: dynamicColumns,
+    getCoreRowModel: getCoreRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      columnVisibility,
+    },
+  })
+
+  return (
+    <div className="w-full space-y-6">
+      <div className="flex items-center justify-end gap-3">
+        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+          <SelectTrigger className="w-[180px] iron-border">
+            <SelectValue placeholder="Select period" />
+          </SelectTrigger>
+          <SelectContent className="bg-card border-primary/20">
+            <SelectItem value="daily">Daily $12K</SelectItem>
+            <SelectItem value="weekly">Weekly $82K</SelectItem>
+          </SelectContent>
+        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="iron-border hover:iron-glow"
+            >
+              <Settings2 className="mr-2 h-4 w-4" />
+              Columns
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-card border-primary/20">
+            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {tempTable
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                const columnNames: Record<string, string> = {
+                  productName: "Product Name",
+                  productNumber: "Product #",
+                  unit: "Unit",
+                  w38: "W38 '25",
+                  w39: "W39 '25",
+                  w40: "W40 '25",
+                  w41: "W41 '25",
+                  conversion: "Conversion",
+                  avg4: "AVG4",
+                  csPer1k: "CS per 1k",
+                  periodColumn: selectedPeriod === "daily" ? "$12K" : "$82K",
+                }
+                
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {columnNames[column.id] || column.id}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {groupedByCategory.map(({ category, products }) => (
+        <CategoryTable
+          key={category}
+          category={category}
+          products={products}
+          dynamicColumns={dynamicColumns}
+          columnVisibility={columnVisibility}
+        />
+      ))}
+    </div>
+  )
+}

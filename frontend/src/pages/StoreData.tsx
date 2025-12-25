@@ -28,9 +28,18 @@ export function StoreData() {
           try {
             const savedProducts = JSON.parse(savedData) as ProductData[]
             // Сопоставляем сохраненные данные с текущими продуктами по ID
+            // Важно: всегда используем группу из productsWithConversion, чтобы группировка работала правильно
             productsWithConversion = productsWithConversion.map(product => {
               const saved = savedProducts.find(p => p.id === product.id)
-              return saved && saved.conversion ? { ...product, conversion: saved.conversion } : product
+              if (saved && saved.conversion) {
+                // Сохраняем conversion из localStorage, но группу всегда берем из текущих данных
+                return { 
+                  ...product, 
+                  conversion: saved.conversion,
+                  group: product.group // Группа всегда из applyConversionData
+                }
+              }
+              return product
             })
           } catch (e) {
             // Если ошибка парсинга, используем данные с конверсией
