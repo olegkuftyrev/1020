@@ -1,7 +1,15 @@
+import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/stores/authStore"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -14,6 +22,7 @@ const navigation = [
 export function SiteHeader() {
   const { logout } = useAuthStore()
   const location = useLocation()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
     <header className="border-b border-primary/20 bg-card/60 backdrop-blur-md sticky top-0 z-30">
@@ -42,6 +51,44 @@ export function SiteHeader() {
               )
             })}
           </nav>
+
+          {/* Mobile Menu */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="md:hidden text-muted-foreground hover:text-foreground hover:bg-primary/5"
+              >
+                Menu
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-card border-primary/20 w-[250px]">
+              <SheetHeader>
+                <SheetTitle className="text-primary iron-text-glow">Navigation</SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-2 mt-6">
+                {navigation.map((item) => {
+                  const isActive = location.pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        "px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                        isActive
+                          ? "bg-primary/20 text-primary border border-primary/30 iron-glow"
+                          : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                      )}
+                    >
+                      {item.name}
+                    </Link>
+                  )
+                })}
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
         
         <div className="flex items-center gap-3">
