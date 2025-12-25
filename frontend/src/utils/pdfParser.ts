@@ -243,7 +243,6 @@ const BOTTLES_PRODUCTS = new Set([
   'P25943',
   'P25973',
   'P25980',
-  'P35040',
 ])
 
 // Определяем продукты группы FoH Packaging
@@ -267,6 +266,7 @@ const CUPS_AND_LIDS_PRODUCTS = new Set([
   'P35406',
   'P35062',
   'P35065',
+  'P35040',
 ])
 
 // Определяем продукты группы Prep Area
