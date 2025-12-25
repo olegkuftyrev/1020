@@ -252,6 +252,8 @@ const FOH_PACKAGING_PRODUCTS = new Set([
   'P35509',
   'P35508',
   'P35275',
+  'P36029',
+  'P35719',
 ])
 
 // Определяем продукты группы Cups & lids
@@ -285,8 +287,6 @@ const FOH_PRODUCTS = new Set([
   'P35213',
   'P35432',
   'P35542',
-  'P35719',
-  'P36029',
 ])
 
 export function applyConversionData(products: ProductData[]): ProductData[] {
