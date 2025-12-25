@@ -193,13 +193,13 @@ const SAUCE_CART_PRODUCTS = new Set([
   'P1249',
   'P1268',
   'P1107',
+  'P1295',
 ])
 
 // Определяем продукты группы Condements
 const CONDEMENTS_PRODUCTS = new Set([
   'P1652',
   'P1566',
-  'P1295',
   'P1151',
 ])
 
