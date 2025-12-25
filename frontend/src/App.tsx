@@ -1,40 +1,42 @@
 import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import { LoginForm } from './components/LoginForm'
-import { Button } from './components/ui/button'
+import { Layout } from './components/Layout'
+import { Dashboard } from './pages/Dashboard'
+import { StoreData } from './pages/StoreData'
+import { Reports } from './pages/Reports'
+import { Settings } from './pages/Settings'
 
-function Dashboard() {
-  const { logout } = useAuthStore()
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuthStore()
 
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <>{children}</>
+}
+
+function AppRoutes() {
   return (
-    <div className="min-h-screen bg-background iron-bg-pattern">
-      <div className="container mx-auto p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-5xl font-bold mb-4 text-primary iron-text-glow">
-              PANDA EXPRESS DASHBOARD
-            </h1>
-            <div className="h-1 w-32 bg-primary iron-glow mb-4"></div>
-          </div>
-          <Button
-            onClick={logout}
-            variant="outline"
-            className="iron-border text-foreground hover:bg-secondary"
-          >
-            LOGOUT
-          </Button>
-        </div>
-
-        <div className="iron-border rounded-lg p-8 bg-card/50 backdrop-blur-sm">
-          <p className="text-muted-foreground text-lg">
-            Store dashboard for internal use
-          </p>
-          <p className="text-foreground mt-4">
-            Welcome to the dashboard. Your data will appear here.
-          </p>
-        </div>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginForm />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="store-data" element={<StoreData />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
+    </Routes>
   )
 }
 
@@ -45,11 +47,11 @@ function App() {
     verify()
   }, [verify])
 
-  if (!isAuthenticated) {
-    return <LoginForm />
-  }
-
-  return <Dashboard />
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  )
 }
 
 export default App
