@@ -10,12 +10,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Add your models here
-// Example store data structure - adjust as needed
-model StoreData {
+// Product model for storing parsed PDF data
+model Product {
+  id            String   @id @default(uuid())
+  productNumber String   @unique // e.g., P10002
+  productName   String
+  unit          String
+  w38           String
+  w39           String
+  w40           String
+  w41           String
+  conversion    String?  // Can be null initially
+  group         String?  // Category/group (WIF, Appetizers, etc.)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([productNumber])
+  @@index([group])
+}
+
+// PDF metadata model
+model PdfMetadata {
   id        Int      @id @default(autoincrement())
+  pageCount Int
+  title     String?
+  metadata  Json?    // Store metadata as JSON
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  // Add your store data fields here
 }

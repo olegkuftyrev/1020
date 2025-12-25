@@ -358,44 +358,61 @@ function splitIntoProductRows(text: string): string[] {
   return rows
 }
 
-export async function parsePDF(filePath: string): Promise<ParsedPDFData> {
+/**
+ * Parse PDF from ArrayBuffer
+ */
+async function parsePDFFromBuffer(arrayBuffer: ArrayBuffer): Promise<ParsedPDFData> {
+  // Загружаем PDF из ArrayBuffer
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+  const pdf = await loadingTask.promise
+  
+  const pageCount = pdf.numPages
+  let fullText = ''
+  
+  // Извлекаем текст со всех страниц
+  for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+    const page = await pdf.getPage(pageNum)
+    const textContent = await page.getTextContent()
+    
+    // Объединяем текст из всех элементов страницы
+    const pageText = textContent.items
+      .map((item: any) => item.str)
+      .join(' ')
+    
+    fullText += `--- Page ${pageNum} ---\n${pageText}\n\n`
+  }
+  
+  // Получаем метаданные если есть
+  const metadata = await pdf.getMetadata()
+  
+  // Разбиваем текст на строки по номерам продуктов (начинаются с P и цифр)
+  const rows = splitIntoProductRows(fullText.trim())
+  
+  return {
+    text: fullText.trim(),
+    pageCount,
+    metadata: metadata?.info || {},
+    rows
+  }
+}
+
+/**
+ * Parse PDF from file path (URL) or ArrayBuffer
+ */
+export async function parsePDF(filePathOrBuffer: string | ArrayBuffer): Promise<ParsedPDFData> {
   try {
-    // Загружаем PDF файл через fetch
-    const response = await fetch(filePath)
-    const arrayBuffer = await response.arrayBuffer()
+    let arrayBuffer: ArrayBuffer
     
-    // Загружаем PDF из ArrayBuffer
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
-    const pdf = await loadingTask.promise
-    
-    const pageCount = pdf.numPages
-    let fullText = ''
-    
-    // Извлекаем текст со всех страниц
-    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-      const page = await pdf.getPage(pageNum)
-      const textContent = await page.getTextContent()
-      
-      // Объединяем текст из всех элементов страницы
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ')
-      
-      fullText += `--- Page ${pageNum} ---\n${pageText}\n\n`
+    if (typeof filePathOrBuffer === 'string') {
+      // Загружаем PDF файл через fetch
+      const response = await fetch(filePathOrBuffer)
+      arrayBuffer = await response.arrayBuffer()
+    } else {
+      // Уже ArrayBuffer
+      arrayBuffer = filePathOrBuffer
     }
     
-    // Получаем метаданные если есть
-    const metadata = await pdf.getMetadata()
-    
-    // Разбиваем текст на строки по номерам продуктов (начинаются с P и цифр)
-    const rows = splitIntoProductRows(fullText.trim())
-    
-    return {
-      text: fullText.trim(),
-      pageCount,
-      metadata: metadata?.info || {},
-      rows
-    }
+    return await parsePDFFromBuffer(arrayBuffer)
   } catch (error: any) {
     console.error('Error parsing PDF:', error)
     throw new Error(`Failed to parse PDF: ${error?.message || error}`)

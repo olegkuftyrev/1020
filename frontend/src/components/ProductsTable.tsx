@@ -36,9 +36,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
 import { ProductData } from "@/utils/pdfParser"
+import { updateProductConversion } from "@/utils/productsApi"
 
-const columns: ColumnDef<ProductData>[] = [
+// Create columns function that accepts onConversionChange callback
+const createColumns = (onConversionChange?: (productNumber: string, conversion: string) => Promise<void>): ColumnDef<ProductData>[] => [
   {
     accessorKey: "productNumber",
     header: "Product #",
@@ -56,10 +59,48 @@ const columns: ColumnDef<ProductData>[] = [
     accessorKey: "conversion",
     header: "Conversion",
     cell: ({ row }) => {
-      const value = row.getValue("conversion") as string
+      const product = row.original
+      const [value, setValue] = React.useState(product.conversion || '')
+      const [isUpdating, setIsUpdating] = React.useState(false)
+
+      const handleBlur = async () => {
+        if (value !== (product.conversion || '')) {
+          setIsUpdating(true)
+          try {
+            if (onConversionChange) {
+              await onConversionChange(product.productNumber, value)
+            } else {
+              await updateProductConversion(product.productNumber, value)
+            }
+            // Update local state
+            product.conversion = value
+          } catch (error) {
+            // Revert on error
+            setValue(product.conversion || '')
+            console.error('Failed to update conversion:', error)
+          } finally {
+            setIsUpdating(false)
+          }
+        }
+      }
+
+      const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+          e.currentTarget.blur()
+        }
+      }
+
       return (
-        <div className="text-center text-muted-foreground">
-          {value || '-'}
+        <div className="text-center">
+          <Input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            disabled={isUpdating}
+            className="w-20 h-8 text-center text-sm"
+            placeholder="-"
+          />
         </div>
       )
     },
@@ -144,7 +185,7 @@ const columns: ColumnDef<ProductData>[] = [
 
 interface ProductsTableProps {
   data: ProductData[]
-  onDataChange?: (updatedData: ProductData[]) => void
+  onDataChange?: () => void // SWR mutate function
 }
 
 // Порядок категорий
@@ -258,8 +299,10 @@ function CategoryTable({
   )
 }
 
-export function ProductsTable({ data }: ProductsTableProps) {
+export function ProductsTable({ data, onDataChange }: ProductsTableProps) {
   const [selectedPeriod, setSelectedPeriod] = React.useState<string>("daily")
+  const [searchQuery, setSearchQuery] = React.useState<string>("")
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = React.useState<string>("all")
   
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     conversion: false,
@@ -271,9 +314,18 @@ export function ProductsTable({ data }: ProductsTableProps) {
     avg4: false,
   })
 
+  // Handle conversion update with SWR revalidation
+  const handleConversionChange = async (productNumber: string, conversion: string) => {
+    await updateProductConversion(productNumber, conversion)
+    // Revalidate SWR cache
+    if (onDataChange) {
+      onDataChange()
+    }
+  }
+
   // Динамические колонки в зависимости от выбранного периода
   const dynamicColumns: ColumnDef<ProductData>[] = React.useMemo(() => [
-    ...columns,
+    ...createColumns(handleConversionChange),
     {
       id: "periodColumn",
       header: selectedPeriod === "daily" ? "$12K" : "$82K",
@@ -320,11 +372,46 @@ export function ProductsTable({ data }: ProductsTableProps) {
     },
   ], [selectedPeriod])
 
+  // Получаем список всех категорий
+  const availableCategories = React.useMemo(() => {
+    const categories = new Set<string>()
+    data.forEach(product => {
+      categories.add(product.group || 'Others')
+    })
+    return Array.from(categories).sort((a, b) => {
+      const orderA = CATEGORY_ORDER[a] ?? 999
+      const orderB = CATEGORY_ORDER[b] ?? 999
+      return orderA - orderB
+    })
+  }, [data])
+
+  // Фильтруем данные по поисковому запросу и категории
+  const filteredData = React.useMemo(() => {
+    let filtered = data
+
+    // Фильтр по категории
+    if (selectedCategoryFilter !== 'all') {
+      filtered = filtered.filter(product => (product.group || 'Others') === selectedCategoryFilter)
+    }
+
+    // Фильтр по поисковому запросу
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      filtered = filtered.filter(product => {
+        const productNumber = product.productNumber.toLowerCase()
+        const productName = product.productName.toLowerCase()
+        return productNumber.includes(query) || productName.includes(query)
+      })
+    }
+
+    return filtered
+  }, [data, searchQuery, selectedCategoryFilter])
+
   // Группируем продукты по категориям
   const groupedByCategory = React.useMemo(() => {
     const groups: Record<string, ProductData[]> = {}
     
-    data.forEach(product => {
+    filteredData.forEach(product => {
       const category = product.group || 'Others'
       if (!groups[category]) {
         groups[category] = []
@@ -339,8 +426,8 @@ export function ProductsTable({ data }: ProductsTableProps) {
 
     // Сортируем категории по порядку
     const sortedCategories = Object.keys(groups).sort((a, b) => {
-      const orderA = CATEGORY_ORDER[a] ?? 9
-      const orderB = CATEGORY_ORDER[b] ?? 9
+      const orderA = CATEGORY_ORDER[a] ?? 999
+      const orderB = CATEGORY_ORDER[b] ?? 999
       return orderA - orderB
     })
 
@@ -348,7 +435,7 @@ export function ProductsTable({ data }: ProductsTableProps) {
       category,
       products: groups[category],
     }))
-  }, [data])
+  }, [filteredData])
 
   // Создаем временную таблицу для управления видимостью колонок
   const tempTable = useReactTable({
@@ -363,6 +450,38 @@ export function ProductsTable({ data }: ProductsTableProps) {
 
   return (
     <div className="w-full space-y-6">
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Input
+          type="text"
+          placeholder="Search by product number or name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 iron-border"
+        />
+        <Select value={selectedCategoryFilter} onValueChange={setSelectedCategoryFilter}>
+          <SelectTrigger className="w-full sm:w-[200px] iron-border">
+            <SelectValue placeholder="All categories" />
+          </SelectTrigger>
+          <SelectContent className="bg-card border-primary/20">
+            <SelectItem value="all">All Categories</SelectItem>
+            {availableCategories.map(category => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Results count */}
+      {(searchQuery || selectedCategoryFilter !== 'all') && (
+        <div className="text-sm text-muted-foreground">
+          Showing {filteredData.length} of {data.length} product{data.length !== 1 ? 's' : ''}
+          {searchQuery && ` matching "${searchQuery}"`}
+          {selectedCategoryFilter !== 'all' && ` in ${selectedCategoryFilter}`}
+        </div>
+      )}
+
+      {/* Controls */}
       <div className="flex items-center justify-end gap-3">
         <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
           <SelectTrigger className="w-[180px] iron-border">
@@ -420,6 +539,28 @@ export function ProductsTable({ data }: ProductsTableProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* No results message */}
+      {groupedByCategory.length === 0 && (
+        <div className="rounded-lg border border-primary/20 bg-card/60 p-8 text-center">
+          <p className="text-muted-foreground">
+            No products found matching your search criteria.
+          </p>
+          {(searchQuery || selectedCategoryFilter !== 'all') && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4 iron-border"
+              onClick={() => {
+                setSearchQuery('')
+                setSelectedCategoryFilter('all')
+              }}
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
+      )}
 
       {groupedByCategory.map(({ category, products }) => (
         <CategoryTable

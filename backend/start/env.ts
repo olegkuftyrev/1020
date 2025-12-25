@@ -45,5 +45,6 @@ export default {
   APP_KEY: new Secret(process.env.APP_KEY || 'change-me-in-production-use-a-secure-random-key-at-least-32-characters-long'),
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
   DATABASE_URL: getEnvVar('DATABASE_URL', 'postgresql://user:password@localhost:5432/panda_express_db?schema=public'),
-  AUTH_PASSWORD: getEnvVar('AUTH_PASSWORD', 'password123'),
+  AUTH_PASSWORD: getEnvVar('AUTH_PASSWORD', '123456'),
+  WEBHOOK_SECRET: process.env.WEBHOOK_SECRET || 'change-me-in-production-webhook-secret',
 } as const

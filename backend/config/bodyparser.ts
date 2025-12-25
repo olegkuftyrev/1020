@@ -15,7 +15,6 @@ export default defineConfig({
     autoProcess: true,
     processManually: [],
     maxFields: 1000,
-    maxFileSize: '20mb',
     types: ['multipart/form-data'],
   },
 })

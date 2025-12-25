@@ -44,6 +44,25 @@ ignitor.tap(async (app) => {
     const router = await app.container.make('router')
     const server = await app.container.make('server')
     
+    // Add CORS middleware - register it as a function that returns middleware
+    server.use([
+      () => Promise.resolve({
+        default: class {
+          async handle(ctx: any, next: any) {
+            ctx.response.header('Access-Control-Allow-Origin', '*')
+            ctx.response.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ctx.response.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+            
+            if (ctx.request.method() === 'OPTIONS') {
+              return ctx.response.noContent()
+            }
+            
+            await next()
+          }
+        }
+      })
+    ])
+    
     // Ensure bodyparser middleware is registered on router
     router.use([
       () => import('@adonisjs/core/bodyparser_middleware'),
@@ -60,6 +79,18 @@ ignitor.tap(async (app) => {
     // Register routes before the server starts
     router.post('/api/auth/login', '#controllers/auth_controller.login')
     router.get('/api/auth/verify', '#controllers/auth_controller.verify')
+    
+    // Products routes
+    router.get('/api/products', '#controllers/products_controller.index')
+    router.get('/api/products/:productNumber', '#controllers/products_controller.show')
+    router.post('/api/products/sync', '#controllers/products_controller.sync')
+    router.put('/api/products/:productNumber/conversion', '#controllers/products_controller.updateConversion')
+    router.get('/api/products/metadata/pdf', '#controllers/products_controller.getPdfMetadata')
+    router.get('/api/products/statistics', '#controllers/products_controller.getStatistics')
+    router.get('/api/products/category-summary', '#controllers/products_controller.getCategorySummary')
+    
+    // Deploy webhook route
+    router.post('/api/deploy/webhook', '#controllers/deploy_controller.webhook')
     
     // Call original start
     return originalStart(callback)

@@ -2,6 +2,18 @@
   "name": "panda-express-dashboard-backend",
   "version": "1.0.0",
   "type": "module",
+  "imports": {
+    "#app/*": "./build/app/*.js",
+    "#config/*": "./build/config/*.js",
+    "#start/*": "./build/start/*.js",
+    "#contracts/*": "./build/contracts/*.js",
+    "#controllers/*": "./build/app/controllers/*.js",
+    "#exceptions/*": "./build/app/exceptions/*.js",
+    "#middleware/*": "./build/app/middleware/*.js",
+    "#models/*": "./build/app/models/*.js",
+    "#services/*": "./build/app/services/*.js",
+    "#validators/*": "./build/app/validators/*.js"
+  },
   "scripts": {
     "dev": "node --import tsx server.ts",
     "build": "tsc",

@@ -135,7 +135,7 @@ export function LoginForm() {
       await login(pinString)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid PIN. Access denied.')
+      setError(err.message || 'Invalid PIN. Access denied.')
       setPin(Array(6).fill(''))
       inputRefs.current[0]?.focus()
     }
