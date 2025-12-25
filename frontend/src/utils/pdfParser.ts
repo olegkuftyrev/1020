@@ -254,6 +254,17 @@ const FOH_PACKAGING_PRODUCTS = new Set([
   'P35275',
 ])
 
+// Определяем продукты группы Cups & lids
+const CUPS_AND_LIDS_PRODUCTS = new Set([
+  'P35149',
+  'P35380',
+  'P35268',
+  'P35269',
+  'P35406',
+  'P35062',
+  'P35065',
+])
+
 // Определяем продукты группы FoH
 const FOH_PRODUCTS = new Set([
   'P1079',
@@ -267,14 +278,7 @@ const FOH_PRODUCTS = new Set([
   'P19052',
   'P2002',
   'P35048',
-  'P35062',
-  'P35065',
-  'P35149',
   'P35213',
-  'P35268',
-  'P35269',
-  'P35380',
-  'P35406',
   'P35432',
   'P35542',
   'P35719',
@@ -302,6 +306,8 @@ export function applyConversionData(products: ProductData[]): ProductData[] {
       group = 'Bottles'
     } else if (FOH_PACKAGING_PRODUCTS.has(product.productNumber)) {
       group = 'FoH Packaging'
+    } else if (CUPS_AND_LIDS_PRODUCTS.has(product.productNumber)) {
+      group = 'Cups & lids'
     } else if (FOH_PRODUCTS.has(product.productNumber)) {
       group = 'FoH'
     }
