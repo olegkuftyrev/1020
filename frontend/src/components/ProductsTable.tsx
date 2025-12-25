@@ -157,8 +157,9 @@ const CATEGORY_ORDER: Record<string, number> = {
   'Bottles': 7,
   'FoH Packaging': 8,
   'Cups & lids': 9,
-  'FoH': 10,
-  'Others': 11,
+  'Prep Area': 10,
+  'FoH': 11,
+  'Others': 12,
 }
 
 function CategoryTable({

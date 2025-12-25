@@ -265,17 +265,21 @@ const CUPS_AND_LIDS_PRODUCTS = new Set([
   'P35065',
 ])
 
+// Определяем продукты группы Prep Area
+const PREP_AREA_PRODUCTS = new Set([
+  'P1158',
+  'P19052',
+  'P1116',
+  'P1129',
+  'P1131',
+  'P1272',
+])
+
 // Определяем продукты группы FoH
 const FOH_PRODUCTS = new Set([
   'P1079',
   'P1107',
-  'P1116',
-  'P1129',
-  'P1131',
   'P1151',
-  'P1158',
-  'P1272',
-  'P19052',
   'P2002',
   'P35048',
   'P35213',
@@ -308,6 +312,8 @@ export function applyConversionData(products: ProductData[]): ProductData[] {
       group = 'FoH Packaging'
     } else if (CUPS_AND_LIDS_PRODUCTS.has(product.productNumber)) {
       group = 'Cups & lids'
+    } else if (PREP_AREA_PRODUCTS.has(product.productNumber)) {
+      group = 'Prep Area'
     } else if (FOH_PRODUCTS.has(product.productNumber)) {
       group = 'FoH'
     }
