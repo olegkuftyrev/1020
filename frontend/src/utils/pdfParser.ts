@@ -187,15 +187,20 @@ const SIDES_PRODUCTS = new Set([
 // Определяем продукты группы Sauce Cart
 const SAUCE_CART_PRODUCTS = new Set([
   'P1093',
-  'P1566',
   'P1580',
-  'P1652',
-  'P1295',
   'P1404',
   'P1233',
   'P1249',
   'P1268',
   'P1107',
+])
+
+// Определяем продукты группы Condements
+const CONDEMENTS_PRODUCTS = new Set([
+  'P1652',
+  'P1566',
+  'P1295',
+  'P1151',
 ])
 
 // Определяем продукты группы Vegetables
@@ -282,7 +287,6 @@ const PREP_AREA_PRODUCTS = new Set([
 // Определяем продукты группы FoH
 const FOH_PRODUCTS = new Set([
   'P1079',
-  'P1151',
   'P35048',
   'P35213',
   'P35432',
@@ -300,6 +304,8 @@ export function applyConversionData(products: ProductData[]): ProductData[] {
       group = 'Sides'
     } else if (SAUCE_CART_PRODUCTS.has(product.productNumber)) {
       group = 'Sauce Cart'
+    } else if (CONDEMENTS_PRODUCTS.has(product.productNumber)) {
+      group = 'Condements'
     } else if (VEGETABLES_PRODUCTS.has(product.productNumber)) {
       group = 'Vegetables'
     } else if (BIBS_PRODUCTS.has(product.productNumber)) {
