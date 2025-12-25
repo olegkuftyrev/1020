@@ -147,7 +147,7 @@ interface ProductsTableProps {
 
 // Порядок категорий
 const CATEGORY_ORDER: Record<string, number> = {
-  'WIC': 0,
+  'WIF': 0,
   'Appetizers': 1,
   'Sides': 2,
   'Sauce Cart': 3,

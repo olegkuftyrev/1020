@@ -297,7 +297,7 @@ export function applyConversionData(products: ProductData[]): ProductData[] {
   return products.map(product => {
     let group = 'Others'
     if (WIC_PRODUCTS.has(product.productNumber)) {
-      group = 'WIC'
+      group = 'WIF'
     } else if (APPETIZERS_PRODUCTS.has(product.productNumber)) {
       group = 'Appetizers'
     } else if (SIDES_PRODUCTS.has(product.productNumber)) {
