@@ -181,6 +181,7 @@ const APPETIZERS_PRODUCTS = new Set([
 const SIDES_PRODUCTS = new Set([
   'P1102',
   'P1112',
+  'P2002',
 ])
 
 // Определяем продукты группы Sauce Cart
@@ -194,6 +195,7 @@ const SAUCE_CART_PRODUCTS = new Set([
   'P1233',
   'P1249',
   'P1268',
+  'P1107',
 ])
 
 // Определяем продукты группы Vegetables
@@ -280,9 +282,7 @@ const PREP_AREA_PRODUCTS = new Set([
 // Определяем продукты группы FoH
 const FOH_PRODUCTS = new Set([
   'P1079',
-  'P1107',
   'P1151',
-  'P2002',
   'P35048',
   'P35213',
   'P35432',
