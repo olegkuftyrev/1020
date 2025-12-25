@@ -225,6 +225,8 @@ const BIBS_PRODUCTS = new Set([
   'P25027',
   'P25244',
   'P25346',
+  'P25933',
+  'P25943',
 ])
 
 // Определяем продукты группы PCB
@@ -239,8 +241,6 @@ const PCB_PRODUCTS = new Set([
 const BOTTLES_PRODUCTS = new Set([
   'P25908',
   'P25911',
-  'P25933',
-  'P25943',
   'P25973',
   'P25980',
 ])
