@@ -4,8 +4,10 @@ import * as React from "react"
 import {
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
   useReactTable,
   type ColumnDef,
+  type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table"
 import { Settings2 } from "lucide-react"
@@ -174,11 +176,19 @@ function CategoryTable({
   dynamicColumns: ColumnDef<ProductData>[]
   columnVisibility: VisibilityState
 }) {
+  // Сортируем по последней колонке (periodColumn) по убыванию по умолчанию
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: 'periodColumn', desc: true }
+  ])
+
   const table = useReactTable({
     data: products,
     columns: dynamicColumns,
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     state: {
+      sorting,
       columnVisibility,
     },
   })
