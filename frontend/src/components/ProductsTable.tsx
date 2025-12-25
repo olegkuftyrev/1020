@@ -169,7 +169,7 @@ interface ProductsTableProps {
   onDataChange?: (updatedData: ProductData[]) => void
 }
 
-export function ProductsTable({ data, onDataChange }: ProductsTableProps) {
+export function ProductsTable({ data }: ProductsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [selectedPeriod, setSelectedPeriod] = React.useState<string>("daily")
   

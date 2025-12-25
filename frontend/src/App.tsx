@@ -41,7 +41,7 @@ function AppRoutes() {
 }
 
 function App() {
-  const { isAuthenticated, verify } = useAuthStore()
+  const { verify } = useAuthStore()
 
   useEffect(() => {
     verify()
