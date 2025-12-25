@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard" },
-  { name: "Store Data", href: "/store-data" },
+  { name: "$1000 Usage", href: "/store-data" },
   { name: "Reports", href: "/reports" },
   { name: "Settings", href: "/settings" },
 ]
