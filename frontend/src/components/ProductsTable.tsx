@@ -39,6 +39,21 @@ import {
 import { Input } from "@/components/ui/input"
 import { ProductData } from "@/utils/pdfParser"
 import { updateProductConversion } from "@/utils/productsApi"
+import { cn } from "@/lib/utils"
+
+// Check if product has anomaly (difference between weeks > 0.5)
+function hasAnomaly(product: ProductData): boolean {
+  const w38 = parseFloat(product.w38) || 0
+  const w39 = parseFloat(product.w39) || 0
+  const w40 = parseFloat(product.w40) || 0
+  const w41 = parseFloat(product.w41) || 0
+  
+  const values = [w38, w39, w40, w41]
+  const max = Math.max(...values)
+  const min = Math.min(...values)
+  
+  return (max - min) > 0.5
+}
 
 // Create columns function that accepts onConversionChange callback
 const createColumns = (onConversionChange?: (productNumber: string, conversion: string) => Promise<void>): ColumnDef<ProductData>[] => [
@@ -91,14 +106,14 @@ const createColumns = (onConversionChange?: (productNumber: string, conversion: 
       }
 
       return (
-        <div className="text-center">
+        <div className="text-left">
           <Input
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             disabled={isUpdating}
-            className="w-20 h-8 text-center text-sm"
+            className="w-20 h-8 text-left text-sm"
             placeholder="-"
           />
         </div>
@@ -109,35 +124,35 @@ const createColumns = (onConversionChange?: (productNumber: string, conversion: 
     accessorKey: "unit",
     header: "Unit",
     cell: ({ row }) => (
-      <div className="text-center text-muted-foreground">{row.getValue("unit")}</div>
+      <div className="text-left text-muted-foreground">{row.getValue("unit")}</div>
     ),
   },
   {
     accessorKey: "w38",
     header: "W38 '25",
     cell: ({ row }) => (
-      <div className="text-right font-medium">{row.getValue("w38")}</div>
+      <div className="text-left font-medium">{row.getValue("w38")}</div>
     ),
   },
   {
     accessorKey: "w39",
     header: "W39 '25",
     cell: ({ row }) => (
-      <div className="text-right font-medium">{row.getValue("w39")}</div>
+      <div className="text-left font-medium">{row.getValue("w39")}</div>
     ),
   },
   {
     accessorKey: "w40",
     header: "W40 '25",
     cell: ({ row }) => (
-      <div className="text-right font-medium">{row.getValue("w40")}</div>
+      <div className="text-left font-medium">{row.getValue("w40")}</div>
     ),
   },
   {
     accessorKey: "w41",
     header: "W41 '25",
     cell: ({ row }) => (
-      <div className="text-right font-medium">{row.getValue("w41")}</div>
+      <div className="text-left font-medium">{row.getValue("w41")}</div>
     ),
   },
   {
@@ -150,7 +165,7 @@ const createColumns = (onConversionChange?: (productNumber: string, conversion: 
       const w41 = parseFloat(row.original.w41) || 0
       const avg = (w38 + w39 + w40 + w41) / 4
       return (
-        <div className="text-right font-medium">
+        <div className="text-left font-medium">
           {avg.toFixed(2)}
         </div>
       )
@@ -169,13 +184,13 @@ const createColumns = (onConversionChange?: (productNumber: string, conversion: 
       
       if (conversion === 0) {
         return (
-          <div className="text-right text-muted-foreground">-</div>
+          <div className="text-left text-muted-foreground">-</div>
         )
       }
       
       const csPer1k = avg / conversion
       return (
-        <div className="text-right font-medium">
+        <div className="text-left font-medium">
           {csPer1k.toFixed(2)}
         </div>
       )
@@ -261,22 +276,28 @@ function CategoryTable({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-primary/5"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const isAnomaly = hasAnomaly(row.original)
+                return (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className={cn(
+                      "hover:bg-primary/5",
+                      isAnomaly && "bg-yellow-500/10 border-l-4 border-l-yellow-500"
+                    )}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })
             ) : (
               <TableRow>
                 <TableCell
@@ -355,7 +376,7 @@ export function ProductsTable({ data, onDataChange }: ProductsTableProps) {
         
         if (conversion === 0) {
           return (
-            <div className="text-right text-muted-foreground">-</div>
+            <div className="text-left text-muted-foreground">-</div>
           )
         }
         
@@ -364,7 +385,7 @@ export function ProductsTable({ data, onDataChange }: ProductsTableProps) {
         const result = csPer1k * multiplier
         
         return (
-          <div className="text-right font-medium">
+          <div className="text-left font-medium">
             {result.toFixed(2)}
           </div>
         )

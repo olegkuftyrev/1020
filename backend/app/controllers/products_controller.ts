@@ -139,6 +139,7 @@ export default class ProductsController {
             data: {
               pageCount: pdfMetadata.pageCount || 0,
               title: pdfMetadata.title || null,
+              fileName: pdfMetadata.fileName || null,
               metadata: pdfMetadata.metadata || null,
             }
           })

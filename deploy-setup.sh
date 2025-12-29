@@ -84,3 +84,4 @@ echo "1. Update .env file in $BACKEND_DIR"
 echo "2. Run: cd $BACKEND_DIR && npm run prisma:migrate"
 echo "3. Configure nginx (see nginx.conf.example)"
 
+

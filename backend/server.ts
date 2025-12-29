@@ -8,7 +8,6 @@
 | command to run this file and monitor file changes
 |
 */
-
 import 'reflect-metadata'
 import { Ignitor, prettyPrintError } from '@adonisjs/core'
 import AppServiceProvider from '@adonisjs/core/providers/app_provider'
@@ -88,6 +87,15 @@ ignitor.tap(async (app) => {
     router.get('/api/products/metadata/pdf', '#controllers/products_controller.getPdfMetadata')
     router.get('/api/products/statistics', '#controllers/products_controller.getStatistics')
     router.get('/api/products/category-summary', '#controllers/products_controller.getCategorySummary')
+    
+    // P&L routes - order matters: more specific routes first
+    router.get('/api/pl/years', '#controllers/pl_controller.getYears')
+    router.get('/api/pl/:year/periods', '#controllers/pl_controller.getPeriods')
+    router.post('/api/pl/sync', '#controllers/pl_controller.sync')
+    // DELETE must come before GET for same path pattern to avoid route conflicts
+    router.delete('/api/pl/:year/:period', '#controllers/pl_controller.destroy')
+    router.get('/api/pl/:year/:period', '#controllers/pl_controller.show')
+    router.get('/api/pl/:year', '#controllers/pl_controller.index')
     
     // Deploy webhook route
     router.post('/api/deploy/webhook', '#controllers/deploy_controller.webhook')

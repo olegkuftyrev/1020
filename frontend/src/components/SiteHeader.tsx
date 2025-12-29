@@ -1,102 +1,65 @@
-import { useState } from "react"
-import { Link, useLocation } from "react-router-dom"
-import { useAuthStore } from "@/stores/authStore"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
-
-const navigation = [
-  { name: "Dashboard", href: "/dashboard" },
-  { name: "$1000 Usage", href: "/store-data" },
-  { name: "Reports", href: "/reports" },
-  { name: "Settings", href: "/settings" },
-]
+import { Link, useLocation } from 'react-router-dom'
+import { Button } from './ui/button'
+import { useAuthStore } from '@/stores/authStore'
 
 export function SiteHeader() {
-  const { logout } = useAuthStore()
   const location = useLocation()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { logout } = useAuthStore()
+
+  const isActive = (path: string) => location.pathname === path
 
   return (
-    <header className="border-b border-primary/20 bg-card/60 backdrop-blur-md sticky top-0 z-30">
-      <div className="flex h-14 shrink-0 items-center gap-4 px-6">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 text-primary font-bold text-sm iron-glow">
-            PE
-          </div>
-          
-          <nav className="hidden md:flex items-center gap-1">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-                    isActive
-                      ? "bg-primary/10 text-primary border border-primary/30"
-                      : "text-muted-foreground hover:text-foreground hover:bg-primary/5"
-                  )}
+    <header className="border-b border-primary/20 bg-card/40 backdrop-blur-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link to="/" className="text-xl font-bold text-primary iron-text-glow">
+              PANDA EXPRESS
+            </Link>
+            <nav className="hidden md:flex items-center gap-4">
+              <Link to="/">
+                <Button
+                  variant={isActive('/') ? 'default' : 'ghost'}
+                  size="sm"
+                  className="iron-border"
                 >
-                  {item.name}
-                </Link>
-              )
-            })}
-          </nav>
-
-          {/* Mobile Menu */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="md:hidden text-muted-foreground hover:text-foreground hover:bg-primary/5"
-              >
-                Menu
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="bg-card border-primary/20 w-[250px]">
-              <SheetHeader>
-                <SheetTitle className="text-primary iron-text-glow">Navigation</SheetTitle>
-              </SheetHeader>
-              <nav className="flex flex-col gap-2 mt-6">
-                {navigation.map((item) => {
-                  const isActive = location.pathname === item.href
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={cn(
-                        "px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
-                        isActive
-                          ? "bg-primary/20 text-primary border border-primary/30 iron-glow"
-                          : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
-                      )}
-                    >
-                      {item.name}
-                    </Link>
-                  )
-                })}
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Separator orientation="vertical" className="h-5 bg-primary/20" />
+                  Dashboard
+                </Button>
+              </Link>
+              <Link to="/store-data">
+                <Button
+                  variant={isActive('/store-data') ? 'default' : 'ghost'}
+                  size="sm"
+                  className="iron-border"
+                >
+                  Store Data
+                </Button>
+              </Link>
+              <Link to="/reports">
+                <Button
+                  variant={isActive('/reports') ? 'default' : 'ghost'}
+                  size="sm"
+                  className="iron-border"
+                >
+                  Reports
+                </Button>
+              </Link>
+              <Link to="/pl">
+                <Button
+                  variant={isActive('/pl') || location.pathname.startsWith('/pl/') ? 'default' : 'ghost'}
+                  size="sm"
+                  className="iron-border"
+                >
+                  P&L
+                </Button>
+              </Link>
+            </nav>
+          </div>
           <Button
             onClick={logout}
             variant="outline"
-            className="rounded-lg border border-primary/20 bg-transparent hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-all duration-200 font-medium"
+            size="sm"
+            className="iron-border"
           >
             Logout
           </Button>

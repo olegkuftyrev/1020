@@ -6,42 +6,11 @@ import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
 import { StoreData } from './pages/StoreData'
 import { Reports } from './pages/Reports'
-import { Settings } from './pages/Settings'
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  return <>{children}</>
-}
-
-function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginForm />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="store-data" element={<StoreData />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
-    </Routes>
-  )
-}
+import { PL } from './pages/PL'
+import { PLPeriodDetail } from './pages/PLPeriodDetail'
 
 function App() {
-  const { verify } = useAuthStore()
+  const { isAuthenticated, verify } = useAuthStore()
 
   useEffect(() => {
     verify()
@@ -49,7 +18,20 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AppRoutes />
+      {!isAuthenticated ? (
+        <LoginForm />
+      ) : (
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/store-data" element={<StoreData />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/pl" element={<PL />} />
+            <Route path="/pl/:year/:period" element={<PLPeriodDetail />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      )}
     </BrowserRouter>
   )
 }

@@ -20,3 +20,4 @@ else
     echo "   4. Run: chmod 600 ~/.ssh/authorized_keys"
 fi
 
+

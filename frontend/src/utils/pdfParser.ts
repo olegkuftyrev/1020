@@ -11,6 +11,7 @@ export interface ParsedPDFData {
   pageCount: number
   metadata?: any
   rows: string[] // Разбитые строки по продуктам
+  storeTitle?: string // Название стора из заголовка (например, "Store 2475")
 }
 
 export interface ProductData {
@@ -370,6 +371,7 @@ async function parsePDFFromBuffer(arrayBuffer: ArrayBuffer): Promise<ParsedPDFDa
   let fullText = ''
   
   // Извлекаем текст со всех страниц
+  let firstPageText = ''
   for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
     const page = await pdf.getPage(pageNum)
     const textContent = await page.getTextContent()
@@ -379,11 +381,24 @@ async function parsePDFFromBuffer(arrayBuffer: ArrayBuffer): Promise<ParsedPDFDa
       .map((item: any) => item.str)
       .join(' ')
     
+    // Сохраняем текст первой страницы отдельно для поиска названия стора
+    if (pageNum === 1) {
+      firstPageText = pageText
+    }
+    
     fullText += `--- Page ${pageNum} ---\n${pageText}\n\n`
   }
   
   // Получаем метаданные если есть
   const metadata = await pdf.getMetadata()
+  
+  // Извлекаем название стора из текста первой страницы
+  // Ищем паттерн "Store 2475" или "Store 1020" и т.д.
+  let storeTitle: string | undefined
+  const storeMatch = firstPageText.match(/Store\s+(\d+)/i)
+  if (storeMatch) {
+    storeTitle = `Store ${storeMatch[1]}`
+  }
   
   // Разбиваем текст на строки по номерам продуктов (начинаются с P и цифр)
   const rows = splitIntoProductRows(fullText.trim())
@@ -392,7 +407,8 @@ async function parsePDFFromBuffer(arrayBuffer: ArrayBuffer): Promise<ParsedPDFDa
     text: fullText.trim(),
     pageCount,
     metadata: metadata?.info || {},
-    rows
+    rows,
+    storeTitle
   }
 }
 

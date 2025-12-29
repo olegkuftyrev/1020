@@ -12,6 +12,7 @@ const api = axios.create({
 export interface PdfMetadata {
   pageCount: number
   title?: string
+  fileName?: string
   metadata?: any
 }
 

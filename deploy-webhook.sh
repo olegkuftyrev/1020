@@ -35,3 +35,4 @@ systemctl reload nginx
 
 echo "✅ Deployment completed successfully!"
 
+

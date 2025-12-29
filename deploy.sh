@@ -108,3 +108,4 @@ echo "2. Create .env file in $BACKEND_DIR with your configuration"
 echo "3. Run: cd $BACKEND_DIR && npm run prisma:migrate"
 echo "4. Start services with PM2 or systemd"
 
+

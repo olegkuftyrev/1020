@@ -34,7 +34,28 @@ model PdfMetadata {
   id        Int      @id @default(autoincrement())
   pageCount Int
   title     String?
+  fileName  String?  // Original PDF file name
   metadata  Json?    // Store metadata as JSON
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// P&L Report model
+model PlReport {
+  id                 String   @id @default(uuid())
+  year               Int
+  period              Int
+  storeName           String
+  company             String
+  periodString        String   // e.g., "P01", "P12"
+  translationCurrency String  @default("USD")
+  fileName            String?  // Original file name
+  lineItems           Json     // Array of PlLineItemData
+  summaryData         Json     // Summary data object
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([year, period])
+  @@index([year])
+  @@index([period])
 }

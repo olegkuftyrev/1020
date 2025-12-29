@@ -1,15 +1,16 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
+import * as React from 'react'
 import useSWR from 'swr'
 import { parsePDF, ParsedPDFData, parseProductRows, ProductData, applyConversionData } from '@/utils/pdfParser'
 import { ProductsTable } from '@/components/ProductsTable'
 import { productsFetcher, pdfMetadataFetcher, syncProducts } from '@/utils/productsApi'
+import { Dropzone } from '@/components/ui/dropzone'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 
 export function StoreData() {
   const [isParsing, setIsParsing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [forceShowDropzone, setForceShowDropzone] = useState(false)
 
   // Load products from database using SWR
   const { data: products = [], mutate: mutateProducts, isLoading: isLoadingProducts, error: productsError } = useSWR<ProductData[]>(
@@ -34,16 +35,20 @@ export function StoreData() {
     }
   )
 
-  // Handle file upload and parsing
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  // Simple logic: if file exists, show file info, otherwise show dropzone
+  const hasFile = !!pdfMetadata?.fileName
+  const showDropzone = !hasFile || forceShowDropzone
 
+  // Handle file upload and parsing
+  const handleFileSelect = async (file: File) => {
     // Check if it's a PDF
     if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
       setError('Please upload a PDF file')
       return
     }
+
+    // Reset force show dropzone
+    setForceShowDropzone(false)
 
     try {
       setIsParsing(true)
@@ -77,7 +82,8 @@ export function StoreData() {
           console.log('Saving to database...')
           await syncProducts(productsWithConversion, {
             pageCount: data.pageCount,
-            title: data.metadata?.Title,
+            title: data.storeTitle || data.metadata?.Title,
+            fileName: file.name,
             metadata: data.metadata,
           })
           console.log('Saved to database successfully')
@@ -86,12 +92,8 @@ export function StoreData() {
           console.log('Revalidating SWR cache...')
           await mutateProducts()
           await mutatePdfMetadata()
+          setForceShowDropzone(false) // Reset after successful upload
           console.log('SWR cache revalidated')
-
-          // Reset file input
-          if (fileInputRef.current) {
-            fileInputRef.current.value = ''
-          }
         } catch (err: any) {
           const errorMessage = err.message || err.response?.data?.error || 'Failed to parse PDF'
           setError(errorMessage)
@@ -132,28 +134,61 @@ export function StoreData() {
         <div className="h-1 w-24 bg-primary/60 rounded-full iron-glow mb-6"></div>
         
         {/* File upload section */}
-        <div className="mb-6 p-4 rounded-lg border border-primary/20 bg-card/60">
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Upload PDF File
-          </label>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,application/pdf"
-              onChange={handleFileUpload}
-              disabled={isParsing}
-              className="cursor-pointer flex-1"
-            />
-            {isParsing && (
-              <div className="text-sm text-muted-foreground">
-                Processing...
+        <div className="mb-6">
+          {showDropzone && (
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Upload PDF File
+            </label>
+          )}
+          
+          {showDropzone ? (
+            <>
+              <Dropzone
+                onFileSelect={handleFileSelect}
+                accept=".pdf,application/pdf"
+                disabled={isParsing}
+                className="iron-border"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Drag and drop a PDF file here, or click to browse. The file will be parsed and product data will be saved to the database.
+              </p>
+            </>
+          ) : hasFile && (
+            <div className="p-3 rounded-lg border border-primary/20 bg-card/60">
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => setForceShowDropzone(true)}
+                  variant="outline"
+                  size="sm"
+                  disabled={isParsing}
+                  className="iron-border shrink-0"
+                >
+                  Replace
+                </Button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-foreground truncate">
+                    {pdfMetadata?.fileName}
+                  </div>
+                  {pdfMetadata?.title && (
+                    <>
+                      <div className="text-xs text-primary mt-1 font-medium">
+                        {pdfMetadata.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Weeks: W38'25, W39'25, W40'25, W41'25
+                      </div>
+                    </>
+                  )}
+                </div>
+                {isParsing && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+                    <span className="text-xs text-muted-foreground">Processing...</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Upload a PDF file to parse and save product data to the database. You can upload a new file to update the data.
-          </p>
+            </div>
+          )}
         </div>
         
         {loading && (

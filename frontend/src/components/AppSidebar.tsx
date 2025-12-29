@@ -58,13 +58,6 @@ export function AppSidebar() {
                   <span className="font-medium">Reports</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  className="rounded-lg border border-primary/20 bg-transparent hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-all duration-200"
-                >
-                  <span className="font-medium">Settings</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

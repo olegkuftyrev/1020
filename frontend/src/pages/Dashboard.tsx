@@ -198,7 +198,7 @@ export function Dashboard() {
           <div className="h-1 w-16 bg-primary/60 rounded-full"></div>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <Link to="/store-data">
             <div className="rounded-lg border border-primary/20 bg-card/60 p-6 hover:border-primary/40 transition-all cursor-pointer">
               <h4 className="font-semibold text-foreground mb-2">Manage Products</h4>
@@ -212,14 +212,6 @@ export function Dashboard() {
               <h4 className="font-semibold text-foreground mb-2">View Reports</h4>
               <p className="text-sm text-muted-foreground">
                 Generate reports and export data
-              </p>
-            </div>
-          </Link>
-          <Link to="/settings">
-            <div className="rounded-lg border border-primary/20 bg-card/60 p-6 hover:border-primary/40 transition-all cursor-pointer">
-              <h4 className="font-semibold text-foreground mb-2">Settings</h4>
-              <p className="text-sm text-muted-foreground">
-                Configure application settings
               </p>
             </div>
           </Link>

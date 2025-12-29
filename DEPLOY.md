@@ -260,3 +260,4 @@ Make sure to set these in `backend/.env`:
 5. Keep dependencies updated
 6. Use environment variables for secrets
 
+
