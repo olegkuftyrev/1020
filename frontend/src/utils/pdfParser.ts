@@ -1,9 +1,9 @@
 import * as pdfjsLib from 'pdfjs-dist'
 
-// Устанавливаем worker для Vite - используем файл из public
-// В production используем абсолютный путь
+// Устанавливаем worker для Vite - используем CDN или встроенный worker
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `${window.location.origin}/pdf.worker.min.mjs`
+  // Используем CDN для worker, чтобы избежать проблем с динамическим импортом
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 }
 
 export interface ParsedPDFData {
