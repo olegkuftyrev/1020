@@ -25,7 +25,7 @@ function StatCard({ title, value, subtitle, isLoading }: { title: string; value:
   )
 }
 
-function CategoryCard({ category, summary }: { category: CategorySummary }) {
+function CategoryCard({ category }: { category: CategorySummary }) {
   return (
     <div className="rounded-lg border border-primary/20 bg-card/60 p-4 hover:border-primary/40 transition-all">
       <div className="flex items-center justify-between mb-3">

@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import * as React from 'react'
 import useSWR from 'swr'
-import { parsePDF, ParsedPDFData, parseProductRows, ProductData, applyConversionData } from '@/utils/pdfParser'
+import { parsePDF, parseProductRows, ProductData, applyConversionData } from '@/utils/pdfParser'
 import { ProductsTable } from '@/components/ProductsTable'
 import { productsFetcher, pdfMetadataFetcher, syncProducts } from '@/utils/productsApi'
 import { Dropzone } from '@/components/ui/dropzone'

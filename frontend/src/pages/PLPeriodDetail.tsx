@@ -28,7 +28,7 @@ export function PLPeriodDetail() {
   const navigate = useNavigate()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [showCalculations, setShowCalculations] = useState(false) // Hidden by default
+  const [showCalculations] = useState(false) // Hidden by default
   
   // Table visibility filters
   const [tableVisibility, setTableVisibility] = useState({
