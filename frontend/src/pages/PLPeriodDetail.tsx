@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ArrowLeft, Trash2, Filter, Settings2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Filter, Settings2, ArrowUp, ArrowDown } from 'lucide-react'
 
 export function PLPeriodDetail() {
   const { year, period } = useParams<{ year: string; period: string }>()
@@ -872,6 +872,616 @@ export function PLPeriodDetail() {
             <p className="text-sm text-muted-foreground">Currency</p>
             <p className="font-semibold text-foreground">{plData.translationCurrency || 'USD'}</p>
           </div>
+        </div>
+      </div>
+
+      {/* Key Metrics Card */}
+      <div className="rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm p-6 md:p-8 shadow-lg">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-foreground mb-2">
+            Key Metrics
+          </h3>
+          <div className="h-1 w-24 bg-primary/60 rounded-full"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Net Sales */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Net Sales</div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="text-2xl font-bold text-foreground">
+                ${(plData.summaryData.netSales || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              {plData.summaryData.netSalesPriorYear && (() => {
+                const netSales = plData.summaryData.netSales || 0
+                const priorYear = plData.summaryData.netSalesPriorYear || 0
+                const difference = netSales - priorYear
+                const sss = priorYear !== 0 ? ((difference / priorYear) * 100) : 0
+                const isPositive = difference > 0
+                
+                return (
+                  <>
+                    {isPositive ? (
+                      <ArrowUp className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <ArrowDown className="h-5 w-5 text-red-500" />
+                    )}
+                    <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                      SSS: {isPositive ? '+' : ''}{sss.toFixed(2)}%
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+            {plData.summaryData.netSalesPriorYear && (
+              <div className="text-xs text-muted-foreground">
+                Prior Year: ${plData.summaryData.netSalesPriorYear.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            )}
+          </div>
+
+          {/* Total Transactions */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Total Transactions</div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="text-2xl font-bold text-foreground">
+                {(plData.summaryData.totalTransactions || 0).toLocaleString('en-US')}
+              </div>
+              {(() => {
+                // Find Total Transactions from lineItems
+                const txItem = plData.lineItems?.find((item: any) => {
+                  const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                  return accountName === 'total transactions'
+                })
+                
+                if (txItem && txItem.priorYear) {
+                  const transactions = plData.summaryData.totalTransactions || 0
+                  const priorYear = txItem.priorYear || 0
+                  const difference = transactions - priorYear
+                  const sst = priorYear !== 0 ? ((difference / priorYear) * 100) : 0
+                  const isPositive = difference > 0
+                  
+                  return (
+                    <>
+                      {isPositive ? (
+                        <ArrowUp className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <ArrowDown className="h-5 w-5 text-red-500" />
+                      )}
+                      <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                        SST: {isPositive ? '+' : ''}{sst.toFixed(2)}%
+                      </div>
+                    </>
+                  )
+                }
+                return null
+              })()}
+            </div>
+            {(() => {
+              const txItem = plData.lineItems?.find((item: any) => {
+                const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                return accountName === 'total transactions'
+              })
+              
+              if (txItem && txItem.priorYear) {
+                return (
+                  <div className="text-xs text-muted-foreground">
+                    Prior Year: {(txItem.priorYear || 0).toLocaleString('en-US')}
+                  </div>
+                )
+              }
+              return null
+            })()}
+          </div>
+
+          {/* Check Average */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Check Average</div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="text-2xl font-bold text-foreground">
+                ${(plData.summaryData.checkAverage || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              {(() => {
+                // Find Check Average from lineItems
+                const checkItem = plData.lineItems?.find((item: any) => {
+                  const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                  return accountName === 'check avg - net' || accountName.includes('check average')
+                })
+                
+                if (checkItem && checkItem.priorYear) {
+                  const checkAvg = plData.summaryData.checkAverage || 0
+                  const priorYear = checkItem.priorYear || 0
+                  const difference = checkAvg - priorYear
+                  const changePercent = priorYear !== 0 ? ((difference / priorYear) * 100) : 0
+                  const isPositive = difference > 0
+                  
+                  return (
+                    <>
+                      {isPositive ? (
+                        <ArrowUp className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <ArrowDown className="h-5 w-5 text-red-500" />
+                      )}
+                      <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                        {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
+                      </div>
+                    </>
+                  )
+                }
+                return null
+              })()}
+            </div>
+            {(() => {
+              const checkItem = plData.lineItems?.find((item: any) => {
+                const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                return accountName === 'check avg - net' || accountName.includes('check average')
+              })
+              
+              if (checkItem && checkItem.priorYear) {
+                return (
+                  <div className="text-xs text-muted-foreground">
+                    Prior Year: ${(checkItem.priorYear || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                )
+              }
+              return null
+            })()}
+          </div>
+
+          {/* OLO% */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">OLO%</div>
+            <div className="flex items-center gap-2 mb-1">
+              {(() => {
+                // Find Panda Digital % and 3rd Party Digital % from lineItems
+                const pandaItem = plData.lineItems?.find((item: any) => {
+                  const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                  return accountName === 'panda digital %'
+                })
+                
+                const thirdPartyItem = plData.lineItems?.find((item: any) => {
+                  const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                  return accountName === '3rd party digital %'
+                })
+                
+                if (pandaItem && thirdPartyItem) {
+                  // For percentage items, actuals contains the percentage value (as decimal: 0.089612 = 8.96%)
+                  // Need to multiply by 100 to get percentage
+                  const pandaCurrent = (pandaItem.actuals || 0) * 100
+                  const pandaPrior = (pandaItem.priorYear || 0) * 100
+                  const thirdPartyCurrent = (thirdPartyItem.actuals || 0) * 100
+                  const thirdPartyPrior = (thirdPartyItem.priorYear || 0) * 100
+                  
+                  const currentOLO = pandaCurrent + thirdPartyCurrent
+                  const priorYearOLO = pandaPrior + thirdPartyPrior
+                  const difference = currentOLO - priorYearOLO
+                  const isPositive = difference > 0
+                  
+                  return (
+                    <>
+                      <div className="text-2xl font-bold text-foreground">
+                        {currentOLO.toFixed(2)}%
+                      </div>
+                      {isPositive ? (
+                        <ArrowUp className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <ArrowDown className="h-5 w-5 text-red-500" />
+                      )}
+                      <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                        {isPositive ? '+' : ''}{difference.toFixed(2)}pp
+                      </div>
+                    </>
+                  )
+                }
+                return <div className="text-2xl font-bold text-foreground">N/A</div>
+              })()}
+            </div>
+            {(() => {
+              const pandaItem = plData.lineItems?.find((item: any) => {
+                const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                return accountName === 'panda digital %'
+              })
+              
+              const thirdPartyItem = plData.lineItems?.find((item: any) => {
+                const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                return accountName === '3rd party digital %'
+              })
+              
+              if (pandaItem && thirdPartyItem) {
+                const pandaPrior = (pandaItem.priorYear || 0) * 100
+                const thirdPartyPrior = (thirdPartyItem.priorYear || 0) * 100
+                const priorYearOLO = pandaPrior + thirdPartyPrior
+                return (
+                  <div className="text-xs text-muted-foreground">
+                    Prior Year: {priorYearOLO.toFixed(2)}%
+                  </div>
+                )
+              }
+              return null
+            })()}
+          </div>
+
+          {/* COGS */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">COGS</div>
+            <div className="flex items-center gap-2 mb-1">
+              {plData.summaryData.netSales && plData.summaryData.costOfGoodsSold ? (
+                <>
+                  <div className="text-2xl font-bold text-foreground">
+                    {((plData.summaryData.costOfGoodsSold / plData.summaryData.netSales) * 100).toFixed(2)}%
+                  </div>
+                  {plData.summaryData.netSalesPriorYear && plData.summaryData.costOfGoodsSoldPriorYear && (() => {
+                    const currentPercent = (plData.summaryData.costOfGoodsSold / plData.summaryData.netSales) * 100
+                    const priorYearPercent = (plData.summaryData.costOfGoodsSoldPriorYear / plData.summaryData.netSalesPriorYear) * 100
+                    const difference = currentPercent - priorYearPercent
+                    const isPositive = difference < 0 // Для COGS меньше = лучше (зеленый)
+                    
+                    return (
+                      <>
+                        {isPositive ? (
+                          <ArrowDown className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <ArrowUp className="h-5 w-5 text-red-500" />
+                        )}
+                        <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                          {isPositive ? '' : '+'}{difference.toFixed(2)}pp
+                        </div>
+                      </>
+                    )
+                  })()}
+                </>
+              ) : (
+                <div className="text-2xl font-bold text-foreground">N/A</div>
+              )}
+            </div>
+            {plData.summaryData.costOfGoodsSoldPriorYear && plData.summaryData.netSalesPriorYear && (
+              <div className="text-xs text-muted-foreground">
+                Prior Year: {((plData.summaryData.costOfGoodsSoldPriorYear / plData.summaryData.netSalesPriorYear) * 100).toFixed(2)}%
+              </div>
+            )}
+          </div>
+
+          {/* Total Labor */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Total Labor</div>
+            <div className="flex items-center gap-2 mb-1">
+              {plData.summaryData.netSales && plData.summaryData.totalLabor ? (
+                <>
+                  <div className="text-2xl font-bold text-foreground">
+                    {((plData.summaryData.totalLabor / plData.summaryData.netSales) * 100).toFixed(2)}%
+                  </div>
+                  {plData.summaryData.netSalesPriorYear && plData.summaryData.totalLaborPriorYear && (() => {
+                    const currentPercent = (plData.summaryData.totalLabor / plData.summaryData.netSales) * 100
+                    const priorYearPercent = (plData.summaryData.totalLaborPriorYear / plData.summaryData.netSalesPriorYear) * 100
+                    const difference = currentPercent - priorYearPercent
+                    const isPositive = difference < 0 // Для Labor меньше = лучше (зеленый)
+                    
+                    return (
+                      <>
+                        {isPositive ? (
+                          <ArrowDown className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <ArrowUp className="h-5 w-5 text-red-500" />
+                        )}
+                        <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                          {isPositive ? '' : '+'}{difference.toFixed(2)}pp
+                        </div>
+                      </>
+                    )
+                  })()}
+                </>
+              ) : (
+                <div className="text-2xl font-bold text-foreground">N/A</div>
+              )}
+            </div>
+            {plData.summaryData.totalLaborPriorYear && plData.summaryData.netSalesPriorYear && (
+              <div className="text-xs text-muted-foreground">
+                Prior Year: {((plData.summaryData.totalLaborPriorYear / plData.summaryData.netSalesPriorYear) * 100).toFixed(2)}%
+              </div>
+            )}
+          </div>
+
+          {/* Controllable Profit */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Controllable Profit</div>
+            <div className="flex items-center gap-2 mb-1">
+              {plData.summaryData.netSales && plData.summaryData.controllableProfit ? (
+                <>
+                  <div className="text-2xl font-bold text-foreground">
+                    {((plData.summaryData.controllableProfit / plData.summaryData.netSales) * 100).toFixed(2)}%
+                  </div>
+                  {plData.summaryData.netSalesPriorYear && plData.summaryData.controllableProfitPriorYear && (() => {
+                    const currentPercent = (plData.summaryData.controllableProfit / plData.summaryData.netSales) * 100
+                    const priorYearPercent = (plData.summaryData.controllableProfitPriorYear / plData.summaryData.netSalesPriorYear) * 100
+                    const difference = currentPercent - priorYearPercent
+                    const isPositive = difference > 0 // Для Profit больше = лучше (зеленый)
+                    
+                    return (
+                      <>
+                        {isPositive ? (
+                          <ArrowUp className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <ArrowDown className="h-5 w-5 text-red-500" />
+                        )}
+                        <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                          {isPositive ? '+' : ''}{difference.toFixed(2)}pp
+                        </div>
+                      </>
+                    )
+                  })()}
+                </>
+              ) : (
+                <div className="text-2xl font-bold text-foreground">N/A</div>
+              )}
+            </div>
+            {plData.summaryData.controllableProfitPriorYear && plData.summaryData.netSalesPriorYear && (
+              <div className="text-xs text-muted-foreground">
+                Prior Year: {((plData.summaryData.controllableProfitPriorYear / plData.summaryData.netSalesPriorYear) * 100).toFixed(2)}%
+              </div>
+            )}
+          </div>
+
+          {/* Restaurant Contribution */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Restaurant Contribution</div>
+            <div className="flex items-center gap-2 mb-1">
+              {plData.summaryData.netSales && plData.summaryData.controllableProfit && plData.summaryData.fixedCosts ? (
+                <>
+                  {(() => {
+                    const restaurantContribution = plData.summaryData.controllableProfit - plData.summaryData.fixedCosts
+                    const restaurantContributionPercent = (restaurantContribution / plData.summaryData.netSales) * 100
+                    
+                    let priorYearPercent = 0
+                    let difference = 0
+                    if (plData.summaryData.netSalesPriorYear && plData.summaryData.controllableProfitPriorYear && plData.summaryData.fixedCostsPriorYear) {
+                      const priorYearRC = plData.summaryData.controllableProfitPriorYear - plData.summaryData.fixedCostsPriorYear
+                      priorYearPercent = (priorYearRC / plData.summaryData.netSalesPriorYear) * 100
+                      difference = restaurantContributionPercent - priorYearPercent
+                    }
+                    const isPositive = difference > 0
+                    
+                    return (
+                      <>
+                        <div className="text-2xl font-bold text-foreground">
+                          {restaurantContributionPercent.toFixed(2)}%
+                        </div>
+                        {plData.summaryData.netSalesPriorYear && plData.summaryData.controllableProfitPriorYear && plData.summaryData.fixedCostsPriorYear && (
+                          <>
+                            {isPositive ? (
+                              <ArrowUp className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <ArrowDown className="h-5 w-5 text-red-500" />
+                            )}
+                            <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                              {isPositive ? '+' : ''}{difference.toFixed(2)}pp
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )
+                  })()}
+                </>
+              ) : (
+                <div className="text-2xl font-bold text-foreground">N/A</div>
+              )}
+            </div>
+            {plData.summaryData.netSalesPriorYear && plData.summaryData.controllableProfitPriorYear && plData.summaryData.fixedCostsPriorYear && (
+              <div className="text-xs text-muted-foreground">
+                Prior Year: {(((plData.summaryData.controllableProfitPriorYear - plData.summaryData.fixedCostsPriorYear) / plData.summaryData.netSalesPriorYear) * 100).toFixed(2)}%
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground mt-1 italic">
+              = Controllable Profit - Fixed Cost
+            </div>
+          </div>
+
+          {/* Rent $ */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Rent $</div>
+            <div className="flex items-center gap-2 mb-1">
+              {(() => {
+                // Find Rent - MIN and Rent - Other from lineItems
+                const rentMin = plData.lineItems?.find((item: any) => {
+                  const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                  return accountName === 'rent - min'
+                })
+                
+                const rentOther = plData.lineItems?.find((item: any) => {
+                  const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                  return accountName === 'rent - other'
+                })
+                
+                if (rentMin && rentOther) {
+                  const totalRent = (rentMin.actuals || 0) + (rentOther.actuals || 0)
+                  const priorYearRent = (rentMin.priorYear || 0) + (rentOther.priorYear || 0)
+                  const difference = totalRent - priorYearRent
+                  const isPositive = difference < 0 // Для Rent меньше = лучше (зеленый)
+                  
+                  return (
+                    <>
+                      <div className="text-2xl font-bold text-foreground">
+                        ${totalRent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      {isPositive ? (
+                        <ArrowDown className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <ArrowUp className="h-5 w-5 text-red-500" />
+                      )}
+                      <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                        {isPositive ? '' : '+'}${Math.abs(difference).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </>
+                  )
+                }
+                return <div className="text-2xl font-bold text-foreground">N/A</div>
+              })()}
+            </div>
+            {(() => {
+              const rentMin = plData.lineItems?.find((item: any) => {
+                const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                return accountName === 'rent - min'
+              })
+              
+              const rentOther = plData.lineItems?.find((item: any) => {
+                const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+                return accountName === 'rent - other'
+              })
+              
+              if (rentMin && rentOther) {
+                const priorYearRent = (rentMin.priorYear || 0) + (rentOther.priorYear || 0)
+                return (
+                  <div className="text-xs text-muted-foreground">
+                    Prior Year: ${priorYearRent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                )
+              }
+              return null
+            })()}
+            <div className="text-xs text-muted-foreground mt-1 italic">
+              = Rent - MIN + Rent - Other
+            </div>
+          </div>
+
+          {/* Flow Thru %} */}
+          <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Flow Thru %</div>
+            <div className="flex items-center gap-2 mb-1">
+              {(() => {
+                const cpActual = plData.summaryData.controllableProfit || 0
+                const cpPrior = plData.summaryData.controllableProfitPriorYear || 0
+                const nsActual = plData.summaryData.netSales || 0
+                const nsPrior = plData.summaryData.netSalesPriorYear || 0
+                
+                const cpDiff = cpActual - cpPrior
+                const nsDiff = nsActual - nsPrior
+                
+                if (nsDiff !== 0) {
+                  const flowThru = (cpDiff / nsDiff) * 100
+                  const isPositive = flowThru > 0
+                  
+                  return (
+                    <>
+                      <div className="text-2xl font-bold text-foreground">
+                        {flowThru.toFixed(2)}%
+                      </div>
+                      {isPositive ? (
+                        <ArrowUp className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <ArrowDown className="h-5 w-5 text-red-500" />
+                      )}
+                    </>
+                  )
+                }
+                return <div className="text-2xl font-bold text-foreground">N/A</div>
+              })()}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1 italic">
+              = (CP Actual - CP Prior) / (NS Actual - NS Prior) × 100
+            </div>
+          </div>
+
+          {/* Top Expensive Controllable */}
+          {(() => {
+            // Get Controllables items (same logic as in the table)
+            const controllablesExactNames = [
+              'Third Party Delivery Fee',
+              'Credit Card Fees',
+              'Broadband',
+              'Electricity',
+              'Gas',
+              'Telephone',
+              'Waste Disposal',
+              'Water',
+              'Computer Software Expense',
+              'Office and Computer Supplies',
+              'Education and Training Other',
+              'Recruitment',
+              'Professional Services',
+              'Travel Expenses',
+              'Bank Fees',
+              'Dues and Subscriptions',
+              'Moving and Relocation Expenses',
+              'Other Expenses',
+              'Postage and Courier Service',
+              'Repairs',
+              'Maintenance',
+              'Restaurant Expenses',
+              'Restaurant Supplies',
+              'Total Controllables',
+              'Profit Before Adv',
+              'Advertising',
+              'Corporate Advertising',
+              'Media',
+              'Local Store Marketing',
+              'Grand Opening',
+              'Lease Marketing',
+              'Controllable Profit',
+            ]
+            
+            const controllablesItems = plData.lineItems?.filter((item: any) => {
+              const accountName = (item.ledgerAccount || '').trim()
+              return controllablesExactNames.some(exactName => 
+                accountName.toLowerCase() === exactName.toLowerCase()
+              )
+            }) || []
+            
+            // Exclude specific items and totals
+            const excludedNames = [
+              'corporate advertising',
+              'media',
+              'local store marketing',
+              'advertising',
+              'credit card fees',
+              'third party delivery fee',
+              'restaurant expenses',
+              'total controllables',
+              'profit before adv',
+              'controllable profit'
+            ]
+            
+            // Find the most expensive controllable (excluding specified items)
+            const topExpensive = controllablesItems
+              .filter((item: any) => {
+                const name = (item.ledgerAccount || '').toLowerCase().trim()
+                return !excludedNames.includes(name) && 
+                       typeof item.actuals === 'number' && 
+                       item.actuals > 0
+              })
+              .sort((a: any, b: any) => (b.actuals || 0) - (a.actuals || 0))[0]
+            
+            if (!topExpensive) return null
+            
+            const actuals = topExpensive.actuals || 0
+            const priorYear = topExpensive.priorYear || 0
+            const difference = actuals - priorYear
+            const isPositive = difference < 0 // Для Controllables меньше = лучше (зеленый)
+            
+            return (
+              <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Top Controllable</div>
+                <div className="text-xs font-semibold text-foreground mb-2 truncate" title={topExpensive.ledgerAccount}>
+                  {topExpensive.ledgerAccount}
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="text-2xl font-bold text-foreground">
+                    ${actuals.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  {isPositive ? (
+                    <ArrowDown className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <ArrowUp className="h-5 w-5 text-red-500" />
+                  )}
+                  <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    {isPositive ? '' : '+'}${Math.abs(difference).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+                {priorYear > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    Prior Year: ${priorYear.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
       </div>
 

@@ -121,7 +121,7 @@ export async function getPlYears(): Promise<number[]> {
 /**
  * Get periods for a specific year
  */
-export async function getPlPeriods(year: number): Promise<Array<{ period: number; fileName: string | null; updatedAt: string }>> {
+export async function getPlPeriods(year: number): Promise<Array<{ period: number; fileName: string | null; updatedAt: string; keyMetrics?: any }>> {
   try {
     const response = await api.get(`/pl/${year}/periods`)
     return response.data.periods || []
@@ -162,7 +162,7 @@ export async function deletePlReport(year: number, period: number): Promise<void
 /**
  * SWR fetcher for P&L periods
  */
-export const plPeriodsFetcher = async (url: string): Promise<Array<{ period: number; fileName: string | null; updatedAt: string }>> => {
+export const plPeriodsFetcher = async (url: string): Promise<Array<{ period: number; fileName: string | null; updatedAt: string; keyMetrics?: any }>> => {
   try {
     // URL format: /pl/2025/periods
     const response = await api.get(url)

@@ -90,10 +90,12 @@ ignitor.tap(async (app) => {
     
     // P&L routes - order matters: more specific routes first
     router.get('/api/pl/years', '#controllers/pl_controller.getYears')
-    router.get('/api/pl/:year/periods', '#controllers/pl_controller.getPeriods')
     router.post('/api/pl/sync', '#controllers/pl_controller.sync')
-    // DELETE must come before GET for same path pattern to avoid route conflicts
+    // DELETE must come before ALL GET routes with parameters to avoid route conflicts
+    // Place DELETE before any route that could match /api/pl/:year/:period pattern
     router.delete('/api/pl/:year/:period', '#controllers/pl_controller.destroy')
+    // Fixed route for periods (must come after DELETE to avoid conflicts)
+    router.get('/api/pl/:year/periods', '#controllers/pl_controller.getPeriods')
     router.get('/api/pl/:year/:period', '#controllers/pl_controller.show')
     router.get('/api/pl/:year', '#controllers/pl_controller.index')
     

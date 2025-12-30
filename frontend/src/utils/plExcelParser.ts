@@ -163,29 +163,39 @@ export class PlExcelParserService {
           const sheetName = workbook.SheetNames[0]
           const sheet = workbook.Sheets[sheetName]
           
-          // Fix broken !ref if needed
-          if (!sheet['!ref']) {
-            const actualRange = this.getActualRangeFromSheet(sheet)
-            if (actualRange) {
-              sheet['!ref'] = actualRange
-            }
+          // Fix !ref if broken
+          const fixedRef = this.getActualRangeFromSheet(sheet)
+          if (!fixedRef) {
+            throw new Error('Unable to determine data range.')
           }
-          
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { 
-            header: 1, 
-            defval: null,
-            raw: false 
+          sheet['!ref'] = fixedRef
+
+          const headerRowIndex = this.findHeaderRow(sheet, 'Ledger Account')
+          if (headerRowIndex === null) {
+            throw new Error('Header row with "Ledger Account" not found.')
+          }
+
+          // First, get all data to extract metadata
+          const allData = XLSX.utils.sheet_to_json(sheet, { 
+            header: 1,
+            blankrows: false,
+            defval: ''
           }) as any[][]
           
-          const headerRowIndex = this.findHeaderRow(sheet)
-          if (headerRowIndex === null) {
-            throw new Error('Could not find header row with "Ledger Account"')
-          }
+          // Extract metadata from the full data (headerRowIndex is 0-based, but extractMetadata expects 1-based)
+          const metadata = this.extractMetadata(allData, headerRowIndex + 1)
           
-          const metadata = this.extractMetadata(jsonData, headerRowIndex)
+          // Then get data starting from header row
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { 
+            range: headerRowIndex,
+            header: 1,
+            blankrows: false,
+            defval: ''
+          }) as any[][]
+          
           const finalPeriod = periodOverride || metadata.period || this.extractPeriodFromFileName(file.name)
           
-          resolve(this.parsePlData(jsonData, finalPeriod, metadata))
+          resolve(this.parsePlData(jsonData, finalPeriod, metadata, headerRowIndex + 1))
         } catch (error) {
           reject(error)
         }
@@ -202,68 +212,77 @@ export class PlExcelParserService {
     const sheetName = workbook.SheetNames[0]
     const sheet = workbook.Sheets[sheetName]
     
-    // Fix broken !ref if needed
-    if (!sheet['!ref']) {
-      const actualRange = this.getActualRangeFromSheet(sheet)
-      if (actualRange) {
-        sheet['!ref'] = actualRange
-      }
+    // Fix !ref if broken
+    const fixedRef = this.getActualRangeFromSheet(sheet)
+    if (!fixedRef) {
+      throw new Error('Unable to determine data range.')
     }
-    
-    const jsonData = XLSX.utils.sheet_to_json(sheet, { 
-      header: 1, 
-      defval: null,
-      raw: false 
+    sheet['!ref'] = fixedRef
+
+    const headerRowIndex = this.findHeaderRow(sheet, 'Ledger Account')
+    if (headerRowIndex === null) {
+      throw new Error('Header row with "Ledger Account" not found.')
+    }
+
+    // First, get all data to extract metadata
+    const allData = XLSX.utils.sheet_to_json(sheet, { 
+      header: 1,
+      blankrows: false,
+      defval: ''
     }) as any[][]
     
-    const headerRowIndex = this.findHeaderRow(sheet)
-    if (headerRowIndex === null) {
-      throw new Error('Could not find header row with "Ledger Account"')
-    }
+    // Extract metadata from the full data (headerRowIndex is 0-based, but extractMetadata expects 1-based)
+    const metadata = this.extractMetadata(allData, headerRowIndex + 1)
     
-    const metadata = this.extractMetadata(jsonData, headerRowIndex)
+    // Then get data starting from header row
+    const jsonData = XLSX.utils.sheet_to_json(sheet, { 
+      range: headerRowIndex,
+      header: 1,
+      blankrows: false,
+      defval: ''
+    }) as any[][]
+    
     const finalPeriod = periodOverride || metadata.period || (fileName ? this.extractPeriodFromFileName(fileName) : undefined)
     
-    return this.parsePlData(jsonData, finalPeriod, metadata)
+    return this.parsePlData(jsonData, finalPeriod, metadata, headerRowIndex + 1)
   }
 
   // --- UTIL: Normalize text ---
   private static normalizeCellValue(value: any): string {
-    if (value === null || value === undefined) return ''
-    if (typeof value === 'string') return value.trim()
-    return String(value).trim()
+    if (typeof value !== 'string') return ''
+    return value
+      .replace(/<[^>]*>/g, '') // Remove HTML tags like <t>
+      .replace(/&[^;\s]+;/g, '') // Remove HTML entities like &amp;
+      .replace(/\s+/g, ' ') // Collapse whitespace
+      .trim()
+      .toLowerCase()
   }
 
   // --- UTIL: Fix broken !ref by scanning cell addresses ---
   private static getActualRangeFromSheet(sheet: any): string | null {
-    const cellAddresses = Object.keys(sheet).filter(key => !key.startsWith('!'))
-    if (cellAddresses.length === 0) return null
-    
-    const rows: number[] = []
-    const cols: number[] = []
-    
-    cellAddresses.forEach(addr => {
-      const match = addr.match(/^([A-Z]+)(\d+)$/)
-      if (match) {
-        const col = match[1]
-        const row = parseInt(match[2])
-        const colNum = XLSX.utils.decode_col(col)
-        rows.push(row)
-        cols.push(colNum)
-      }
+    const cellAddresses = Object.keys(sheet).filter((key) =>
+      /^[A-Z]+\d+$/.test(key)
+    )
+
+    let minRow = Infinity,
+      maxRow = -1,
+      minCol = Infinity,
+      maxCol = -1
+
+    cellAddresses.forEach((address) => {
+      const { r, c } = XLSX.utils.decode_cell(address)
+      minRow = Math.min(minRow, r)
+      maxRow = Math.max(maxRow, r)
+      minCol = Math.min(minCol, c)
+      maxCol = Math.max(maxCol, c)
     })
-    
-    if (rows.length === 0 || cols.length === 0) return null
-    
-    const minRow = Math.min(...rows)
-    const maxRow = Math.max(...rows)
-    const minCol = Math.min(...cols)
-    const maxCol = Math.max(...cols)
-    
-    const startCell = XLSX.utils.encode_cell({ r: minRow - 1, c: minCol })
-    const endCell = XLSX.utils.encode_cell({ r: maxRow - 1, c: maxCol })
-    
-    return `${startCell}:${endCell}`
+
+    if (cellAddresses.length === 0) return null
+
+    const start = XLSX.utils.encode_cell({ r: minRow, c: minCol })
+    const end = XLSX.utils.encode_cell({ r: maxRow, c: maxCol })
+
+    return `${start}:${end}`
   }
 
   // --- HEADER ROW DETECTOR: based on keyword like "Ledger Account" ---
@@ -271,20 +290,21 @@ export class PlExcelParserService {
     if (!sheet['!ref']) return null
     
     const range = XLSX.utils.decode_range(sheet['!ref'])
-    const keywordLower = keyword.toLowerCase()
-    
-    for (let row = range.s.r; row <= range.e.r; row++) {
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
+
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
         const cell = sheet[cellAddress]
-        if (cell && cell.v) {
-          const cellValue = this.normalizeCellValue(cell.v).toLowerCase()
-          if (cellValue.includes(keywordLower)) {
-            return row + 1 // Convert to 1-based index
+
+        if (cell && typeof cell.v === 'string') {
+          const cleaned = this.normalizeCellValue(cell.v)
+          if (cleaned.includes(keyword.toLowerCase())) {
+            return R // Return 0-based index
           }
         }
       }
     }
+
     return null
   }
 
@@ -347,14 +367,11 @@ export class PlExcelParserService {
   private static parsePlData(
     data: any[][],
     periodFromFile?: string,
-    metadata?: { storeName: string; company: string; period: string; translationCurrency: string }
+    metadata?: { storeName: string; company: string; period: string; translationCurrency: string },
+    _headerRowIndex?: number // Unused, kept for compatibility
   ): PlReportData {
-    const headerRowIndex = this.findHeaderRow({ '!ref': data.length > 0 ? `A1:${XLSX.utils.encode_col(data[0]?.length || 0)}${data.length}` : 'A1:A1' })
-    if (headerRowIndex === null) {
-      throw new Error('Could not find header row')
-    }
-    
-    const headerRow = data[headerRowIndex - 1] || []
+    // When using range: headerRowIndex, the header is already at index 0
+    const headerRow = data[0] || []
     const lineItems: PlLineItemData[] = []
     
     // Find column indices
@@ -438,8 +455,8 @@ export class PlExcelParserService {
       this.normalizeCellValue(h).toLowerCase().includes('%')
     )
     
-    // Parse data rows
-    for (let i = headerRowIndex; i < data.length; i++) {
+    // Parse data rows (starting from row 1, since row 0 is the header)
+    for (let i = 1; i < data.length; i++) {
       const row = data[i]
       if (!row || row.length === 0) continue
       
@@ -464,7 +481,7 @@ export class PlExcelParserService {
         vfpYtd: this.parseNumber(row[vfpYtdCol]),
         priorYearYtd: this.parseNumber(row[priorYearYtdCol]),
         priorYearYtdPercentage: this.parsePercentage(row[priorYearYtdPctCol]),
-        sortOrder: i - headerRowIndex,
+        sortOrder: i - 1,
       }
       
       lineItems.push(lineItem)
@@ -484,7 +501,6 @@ export class PlExcelParserService {
 
   private static extractSummaryData(lineItems: PlLineItemData[]) {
     // Extract summary metrics from line items
-    // This is a simplified version - you may need to adjust based on your actual data structure
     const netSalesItem = lineItems.find(item => 
       item.ledgerAccount.toLowerCase().includes('net sales')
     )
@@ -493,6 +509,56 @@ export class PlExcelParserService {
     )
     const cogsItem = lineItems.find(item => 
       item.ledgerAccount.toLowerCase().includes('cost of goods sold')
+    )
+    
+    // Find Total Labor
+    const totalLaborItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().includes('total labor')
+    )
+    
+    // Find Controllables
+    const controllablesItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().includes('total controllables')
+    )
+    
+    // Find Controllable Profit
+    const controllableProfitItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().includes('controllable profit')
+    )
+    
+    // Find Fixed Costs
+    const fixedCostsItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().includes('total fixed cost')
+    )
+    
+    // Find Total Transactions
+    const totalTransactionsItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().trim() === 'total transactions'
+    )
+    
+    // Find Check Average
+    const checkAverageItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().includes('check avg - net') || 
+      item.ledgerAccount.toLowerCase().includes('check average')
+    )
+    
+    // Find Advertising
+    const advertisingItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().includes('advertising') &&
+      !item.ledgerAccount.toLowerCase().includes('corporate') &&
+      !item.ledgerAccount.toLowerCase().includes('local store')
+    )
+    
+    // Find Restaurant Contribution
+    const restaurantContributionItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().includes('restaurant contribution') ||
+      item.ledgerAccount.toLowerCase().includes('rests contribution')
+    )
+    
+    // Find Cashflow
+    const cashflowItem = lineItems.find(item => 
+      item.ledgerAccount.toLowerCase().includes('cash flow') ||
+      item.ledgerAccount.toLowerCase().includes('cashflow')
     )
     
     return {
@@ -523,65 +589,81 @@ export class PlExcelParserService {
       costOfGoodsSoldVfpYtd: cogsItem?.vfpYtd || 0,
       costOfGoodsSoldPriorYearYtd: cogsItem?.priorYearYtd || 0,
       
-      // Initialize other metrics to 0
-      totalLabor: 0,
-      totalLaborPlan: 0,
-      totalLaborVfp: 0,
-      totalLaborPriorYear: 0,
-      totalLaborActualYtd: 0,
-      totalLaborPlanYtd: 0,
-      totalLaborVfpYtd: 0,
-      totalLaborPriorYearYtd: 0,
-      controllables: 0,
-      controllablesPlan: 0,
-      controllablesVfp: 0,
-      controllablesPriorYear: 0,
-      controllablesActualYtd: 0,
-      controllablesPlanYtd: 0,
-      controllablesVfpYtd: 0,
-      controllablesPriorYearYtd: 0,
-      controllableProfit: 0,
-      controllableProfitPlan: 0,
-      controllableProfitVfp: 0,
-      controllableProfitPriorYear: 0,
-      controllableProfitActualYtd: 0,
-      controllableProfitPlanYtd: 0,
-      controllableProfitVfpYtd: 0,
-      controllableProfitPriorYearYtd: 0,
-      advertising: 0,
-      advertisingPlan: 0,
-      advertisingVfp: 0,
-      advertisingPriorYear: 0,
-      advertisingActualYtd: 0,
-      advertisingPlanYtd: 0,
-      advertisingVfpYtd: 0,
-      advertisingPriorYearYtd: 0,
-      fixedCosts: 0,
-      fixedCostsPlan: 0,
-      fixedCostsVfp: 0,
-      fixedCostsPriorYear: 0,
-      fixedCostsActualYtd: 0,
-      fixedCostsPlanYtd: 0,
-      fixedCostsVfpYtd: 0,
-      fixedCostsPriorYearYtd: 0,
-      restaurantContribution: 0,
-      restaurantContributionPlan: 0,
-      restaurantContributionVfp: 0,
-      restaurantContributionPriorYear: 0,
-      restaurantContributionActualYtd: 0,
-      restaurantContributionPlanYtd: 0,
-      restaurantContributionVfpYtd: 0,
-      restaurantContributionPriorYearYtd: 0,
-      cashflow: 0,
-      cashflowPlan: 0,
-      cashflowVfp: 0,
-      cashflowPriorYear: 0,
-      cashflowActualYtd: 0,
-      cashflowPlanYtd: 0,
-      cashflowVfpYtd: 0,
-      cashflowPriorYearYtd: 0,
-      totalTransactions: 0,
-      checkAverage: 0,
+      // Total Labor
+      totalLabor: totalLaborItem?.actuals || 0,
+      totalLaborPlan: totalLaborItem?.plan || 0,
+      totalLaborVfp: totalLaborItem?.vfp || 0,
+      totalLaborPriorYear: totalLaborItem?.priorYear || 0,
+      totalLaborActualYtd: totalLaborItem?.actualYtd || 0,
+      totalLaborPlanYtd: totalLaborItem?.planYtd || 0,
+      totalLaborVfpYtd: totalLaborItem?.vfpYtd || 0,
+      totalLaborPriorYearYtd: totalLaborItem?.priorYearYtd || 0,
+      
+      // Controllables
+      controllables: controllablesItem?.actuals || 0,
+      controllablesPlan: controllablesItem?.plan || 0,
+      controllablesVfp: controllablesItem?.vfp || 0,
+      controllablesPriorYear: controllablesItem?.priorYear || 0,
+      controllablesActualYtd: controllablesItem?.actualYtd || 0,
+      controllablesPlanYtd: controllablesItem?.planYtd || 0,
+      controllablesVfpYtd: controllablesItem?.vfpYtd || 0,
+      controllablesPriorYearYtd: controllablesItem?.priorYearYtd || 0,
+      
+      // Controllable Profit
+      controllableProfit: controllableProfitItem?.actuals || 0,
+      controllableProfitPlan: controllableProfitItem?.plan || 0,
+      controllableProfitVfp: controllableProfitItem?.vfp || 0,
+      controllableProfitPriorYear: controllableProfitItem?.priorYear || 0,
+      controllableProfitActualYtd: controllableProfitItem?.actualYtd || 0,
+      controllableProfitPlanYtd: controllableProfitItem?.planYtd || 0,
+      controllableProfitVfpYtd: controllableProfitItem?.vfpYtd || 0,
+      controllableProfitPriorYearYtd: controllableProfitItem?.priorYearYtd || 0,
+      
+      // Advertising
+      advertising: advertisingItem?.actuals || 0,
+      advertisingPlan: advertisingItem?.plan || 0,
+      advertisingVfp: advertisingItem?.vfp || 0,
+      advertisingPriorYear: advertisingItem?.priorYear || 0,
+      advertisingActualYtd: advertisingItem?.actualYtd || 0,
+      advertisingPlanYtd: advertisingItem?.planYtd || 0,
+      advertisingVfpYtd: advertisingItem?.vfpYtd || 0,
+      advertisingPriorYearYtd: advertisingItem?.priorYearYtd || 0,
+      
+      // Fixed Costs
+      fixedCosts: fixedCostsItem?.actuals || 0,
+      fixedCostsPlan: fixedCostsItem?.plan || 0,
+      fixedCostsVfp: fixedCostsItem?.vfp || 0,
+      fixedCostsPriorYear: fixedCostsItem?.priorYear || 0,
+      fixedCostsActualYtd: fixedCostsItem?.actualYtd || 0,
+      fixedCostsPlanYtd: fixedCostsItem?.planYtd || 0,
+      fixedCostsVfpYtd: fixedCostsItem?.vfpYtd || 0,
+      fixedCostsPriorYearYtd: fixedCostsItem?.priorYearYtd || 0,
+      
+      // Restaurant Contribution
+      restaurantContribution: restaurantContributionItem?.actuals || 0,
+      restaurantContributionPlan: restaurantContributionItem?.plan || 0,
+      restaurantContributionVfp: restaurantContributionItem?.vfp || 0,
+      restaurantContributionPriorYear: restaurantContributionItem?.priorYear || 0,
+      restaurantContributionActualYtd: restaurantContributionItem?.actualYtd || 0,
+      restaurantContributionPlanYtd: restaurantContributionItem?.planYtd || 0,
+      restaurantContributionVfpYtd: restaurantContributionItem?.vfpYtd || 0,
+      restaurantContributionPriorYearYtd: restaurantContributionItem?.priorYearYtd || 0,
+      
+      // Cashflow
+      cashflow: cashflowItem?.actuals || 0,
+      cashflowPlan: cashflowItem?.plan || 0,
+      cashflowVfp: cashflowItem?.vfp || 0,
+      cashflowPriorYear: cashflowItem?.priorYear || 0,
+      cashflowActualYtd: cashflowItem?.actualYtd || 0,
+      cashflowPlanYtd: cashflowItem?.planYtd || 0,
+      cashflowVfpYtd: cashflowItem?.vfpYtd || 0,
+      cashflowPriorYearYtd: cashflowItem?.priorYearYtd || 0,
+      
+      // Total Transactions
+      totalTransactions: totalTransactionsItem?.actuals || 0,
+      
+      // Check Average
+      checkAverage: checkAverageItem?.actuals || 0,
       directLaborHours: 0,
       averageHourlyWage: 0,
       directHoursProductivity: 0,
