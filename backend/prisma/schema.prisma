@@ -10,18 +10,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Product model for storing parsed PDF data
+// Add your models here
+// Example store data structure - adjust as needed
+model StoreData {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Add your store data fields here
+}
+
+model Gem {
+  id            String   @id @default(uuid())
+  count         String
+  tasteOfFood   String
+  accuracyOfOrder String
+  rawJson       Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model Product {
   id            String   @id @default(uuid())
-  productNumber String   @unique // e.g., P10002
+  productNumber String   @unique
   productName   String
   unit          String
   w38           String
   w39           String
   w40           String
   w41           String
-  conversion    String?  // Can be null initially
-  group         String?  // Category/group (WIF, Appetizers, etc.)
+  conversion    String?
+  group         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -29,33 +48,85 @@ model Product {
   @@index([group])
 }
 
-// PDF metadata model
+model PlReport {
+  id                 String   @id @default(uuid())
+  year               Int
+  period             Int
+  storeName          String
+  company            String
+  periodString       String
+  translationCurrency String  @default("USD")
+  fileName           String?
+  lineItems          Json
+  summaryData        Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([year, period], name: "year_period")
+  @@index([year])
+  @@index([period])
+}
+
+model PlQuestion {
+  id            String   @id @default(uuid())
+  questionId   String   @unique
+  label         String
+  explanation   String
+  formula       String
+  a1            String
+  a2            String
+  a3            String
+  a4            String
+  correctAnswer String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([questionId])
+}
+
 model PdfMetadata {
   id        Int      @id @default(autoincrement())
-  pageCount Int
+  pageCount Int      @default(0)
   title     String?
-  fileName  String?  // Original PDF file name
-  metadata  Json?    // Store metadata as JSON
+  fileName  String?
+  metadata  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// P&L Report model
-model PlReport {
-  id                 String   @id @default(uuid())
-  year               Int
-  period              Int
-  storeName           String
-  company             String
-  periodString        String   // e.g., "P01", "P12"
-  translationCurrency String  @default("USD")
-  fileName            String?  // Original file name
-  lineItems           Json     // Array of PlLineItemData
-  summaryData         Json     // Summary data object
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+model QuestionSet {
+  id              String   @id @default(uuid())
+  name            String
+  showAnswers     Boolean  @default(true)
+  showFormula     Boolean  @default(true)
+  showExplanation Boolean  @default(true)
+  questionIds     String[]
+  results         QuestionSetResult[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@unique([year, period])
-  @@index([year])
-  @@index([period])
+  @@index([name])
+}
+
+model QuestionSetResult {
+  id              String      @id @default(uuid())
+  questionSetId   String
+  questionSet     QuestionSet @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+  answers         Json
+  score           Int
+  totalQuestions  Int
+  completedAt     DateTime    @default(now())
+
+  @@index([questionSetId])
+  @@index([completedAt])
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
 }

@@ -1,0 +1,4 @@
+[
+  {"questionId":"1","label":"If the net sales were $100,000 this year and the SSS was -5.5%, what were the net sales last year?","explanation":"Since SSS = -5.5% (–0.055), calculate 100,000 ÷ 0.945 ≈ 105,820.","formula":"Last Year Net Sales = This Year Net Sales ÷ (1 + SSS)","a1":"$94,500","a2":"$100,000","a3":"$105,820","a4":"$112,000","correctAnswer":"a3"},
+  {"questionId":"2","label":"If there were 10,500 transactions and $110,000 net sales, what was the check average?","explanation":"Calculate 110,000 ÷ 10,500 ≈ 10.48.","formula":"Check Average = Net Sales ÷ Number of Transactions","a1":"$10.00","a2":"$10.48","a3":"$10.58","a4":"$11.00","correctAnswer":"a2"}
+]

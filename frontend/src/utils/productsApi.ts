@@ -180,3 +180,35 @@ export async function getCategorySummary(): Promise<CategorySummary[]> {
   return response.data
 }
 
+/**
+ * Get setting value by key
+ */
+export async function getSetting(key: string): Promise<{ key: string; value: string }> {
+  try {
+    const response = await api.get(`/settings/${key}`)
+    return response.data
+  } catch (error: any) {
+    console.error('Error fetching setting:', error)
+    throw error
+  }
+}
+
+/**
+ * Set setting value by key
+ */
+export async function setSetting(key: string, value: string): Promise<{ key: string; value: string }> {
+  try {
+    const response = await api.put(`/settings/${key}`, { value })
+    return response.data
+  } catch (error: any) {
+    console.error('Error setting setting:', error)
+    if (error.response) {
+      if (error.response.status === 400) {
+        throw new Error(error.response.data?.error || 'Invalid value')
+      }
+      throw new Error(error.response.data?.error || error.response.data?.message || 'Failed to update setting')
+    }
+    throw error
+  }
+}
+

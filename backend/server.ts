@@ -79,17 +79,26 @@ ignitor.tap(async (app) => {
     router.post('/api/auth/login', '#controllers/auth_controller.login')
     router.get('/api/auth/verify', '#controllers/auth_controller.verify')
     
-    // Products routes
+    // Products routes - specific routes must come before parameterized routes
     router.get('/api/products', '#controllers/products_controller.index')
-    router.get('/api/products/:productNumber', '#controllers/products_controller.show')
     router.post('/api/products/sync', '#controllers/products_controller.sync')
-    router.put('/api/products/:productNumber/conversion', '#controllers/products_controller.updateConversion')
     router.get('/api/products/metadata/pdf', '#controllers/products_controller.getPdfMetadata')
     router.get('/api/products/statistics', '#controllers/products_controller.getStatistics')
     router.get('/api/products/category-summary', '#controllers/products_controller.getCategorySummary')
+    router.get('/api/products/:productNumber', '#controllers/products_controller.show')
+    router.put('/api/products/:productNumber/conversion', '#controllers/products_controller.updateConversion')
+    
+    // Settings routes
+    router.get('/api/settings/:key', '#controllers/settings_controller.get')
+    router.put('/api/settings/:key', '#controllers/settings_controller.set')
+    
+    // Gem routes
+    router.get('/api/gem', '#controllers/gem_controller.index')
+    router.post('/api/gem', '#controllers/gem_controller.store')
     
     // P&L routes - order matters: more specific routes first
     router.get('/api/pl/years', '#controllers/pl_controller.getYears')
+    router.get('/api/pl/latest', '#controllers/pl_controller.getLatestPeriod')
     router.post('/api/pl/sync', '#controllers/pl_controller.sync')
     // DELETE must come before ALL GET routes with parameters to avoid route conflicts
     // Place DELETE before any route that could match /api/pl/:year/:period pattern
@@ -98,6 +107,17 @@ ignitor.tap(async (app) => {
     router.get('/api/pl/:year/periods', '#controllers/pl_controller.getPeriods')
     router.get('/api/pl/:year/:period', '#controllers/pl_controller.show')
     router.get('/api/pl/:year', '#controllers/pl_controller.index')
+    
+    // P&L Questions routes
+    router.get('/api/pl-questions', '#controllers/pl_questions_controller.index')
+    router.get('/api/pl-questions/:id', '#controllers/pl_questions_controller.show')
+    router.post('/api/pl-questions/bulk', '#controllers/pl_questions_controller.bulkCreateQuestions')
+    router.get('/api/pl-questions-sets', '#controllers/pl_questions_controller.getSets')
+    router.get('/api/pl-questions-sets/:id', '#controllers/pl_questions_controller.getSet')
+    router.post('/api/pl-questions-sets', '#controllers/pl_questions_controller.createSet')
+    router.post('/api/pl-questions-sets/:id/submit', '#controllers/pl_questions_controller.submitAnswers')
+    router.get('/api/pl-questions-sets/:id/results', '#controllers/pl_questions_controller.getResults')
+    router.delete('/api/pl-questions-sets/:id', '#controllers/pl_questions_controller.deleteSet')
     
     // Deploy webhook route
     router.post('/api/deploy/webhook', '#controllers/deploy_controller.webhook')

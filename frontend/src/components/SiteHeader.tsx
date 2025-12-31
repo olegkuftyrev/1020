@@ -14,14 +14,14 @@ export function SiteHeader() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link to="/" className="text-xl font-bold text-primary iron-text-glow">
-              PANDA EXPRESS
+              px1020
             </Link>
-            <nav className="hidden md:flex items-center gap-4">
+            <nav className="flex items-center gap-2 md:gap-4">
               <Link to="/">
                 <Button
                   variant={isActive('/') ? 'default' : 'ghost'}
                   size="sm"
-                  className="iron-border"
+                  className="iron-border text-xs md:text-sm"
                 >
                   Dashboard
                 </Button>
@@ -30,7 +30,7 @@ export function SiteHeader() {
                 <Button
                   variant={isActive('/store-data') ? 'default' : 'ghost'}
                   size="sm"
-                  className="iron-border"
+                  className="iron-border text-xs md:text-sm"
                 >
                   Store Data
                 </Button>
@@ -39,7 +39,7 @@ export function SiteHeader() {
                 <Button
                   variant={isActive('/reports') ? 'default' : 'ghost'}
                   size="sm"
-                  className="iron-border"
+                  className="iron-border text-xs md:text-sm"
                 >
                   Reports
                 </Button>
@@ -48,9 +48,19 @@ export function SiteHeader() {
                 <Button
                   variant={isActive('/pl') || location.pathname.startsWith('/pl/') ? 'default' : 'ghost'}
                   size="sm"
-                  className="iron-border"
+                  className="iron-border text-xs md:text-sm"
                 >
                   P&L
+                </Button>
+              </Link>
+              <Link to="/pl-questions">
+                <Button
+                  variant={isActive('/pl-questions') || location.pathname.startsWith('/pl-questions/') ? 'default' : 'ghost'}
+                  size="sm"
+                  className="iron-border text-xs md:text-sm"
+                >
+                  <span className="hidden sm:inline">P&L Questions</span>
+                  <span className="sm:hidden">Questions</span>
                 </Button>
               </Link>
             </nav>

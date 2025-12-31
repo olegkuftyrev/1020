@@ -188,3 +188,44 @@ export const plReportFetcher = async (url: string): Promise<PlReport> => {
   return getPlReport(year, period)
 }
 
+/**
+ * Get latest available P&L period with key metrics
+ */
+export async function getLatestPlPeriod(): Promise<{
+  year: number
+  period: number
+  periodString: string
+  storeName: string
+  company: string
+  keyMetrics: any
+  updatedAt: string
+}> {
+  try {
+    console.log('Fetching latest P&L period from /api/pl/latest')
+    const response = await api.get('/pl/latest')
+    console.log('Latest P&L period received:', {
+      year: response.data.year,
+      period: response.data.period,
+      periodString: response.data.periodString,
+      hasKeyMetrics: !!response.data.keyMetrics,
+      keyMetricsKeys: response.data.keyMetrics ? Object.keys(response.data.keyMetrics) : []
+    })
+    return response.data
+  } catch (error: any) {
+    // If 404, return null instead of throwing (no data available)
+    if (error.response?.status === 404) {
+      console.log('No P&L reports found (404)')
+      throw error // Let SWR handle it as "no data"
+    }
+    console.error('Error fetching latest P&L period:', error)
+    if (error.response) {
+      throw new Error(
+        error.response.data?.error ||
+        error.response.data?.message ||
+        'Failed to fetch latest P&L period'
+      )
+    }
+    throw error
+  }
+}
+

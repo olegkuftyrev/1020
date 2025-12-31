@@ -527,5 +527,71 @@ export default class PlController {
       })
     }
   }
+
+  /**
+   * Get latest available P&L period with key metrics
+   * Returns the most recent period available (highest period number)
+   */
+  async getLatestPeriod({ response }: HttpContext) {
+    try {
+      // Get all reports to find the latest one
+      const allReports = await prisma.plReport.findMany({
+        orderBy: [
+          { year: 'desc' },
+          { period: 'desc' }
+        ],
+      })
+
+      if (!allReports || allReports.length === 0) {
+        return response.notFound({ error: 'No P&L reports found' })
+      }
+
+      // Get the most recent report (first one after sorting)
+      const latestReport = allReports[0]
+
+      console.log('Latest P&L report found:', {
+        year: latestReport.year,
+        period: latestReport.period,
+        periodString: latestReport.periodString,
+        hasSummaryData: !!latestReport.summaryData,
+        hasLineItems: Array.isArray(latestReport.lineItems) && latestReport.lineItems.length > 0
+      })
+
+      // Extract key metrics from summaryData
+      const summaryData = latestReport.summaryData as any
+      const lineItems = Array.isArray(latestReport.lineItems) ? latestReport.lineItems : []
+      
+      // Always calculate key metrics to ensure they're up to date
+      const keyMetrics = calculateKeyMetrics(summaryData, lineItems)
+
+      console.log('Calculated key metrics:', {
+        hasNetSales: !!keyMetrics.netSales,
+        hasTotalTransactions: !!keyMetrics.totalTransactions,
+        hasCheckAverage: !!keyMetrics.checkAverage,
+        hasOlo: !!keyMetrics.olo,
+        hasCogs: !!keyMetrics.cogs,
+        hasTotalLabor: !!keyMetrics.totalLabor,
+        hasControllableProfit: !!keyMetrics.controllableProfit,
+        hasRestaurantContribution: !!keyMetrics.restaurantContribution,
+      })
+
+      return response.ok({
+        year: latestReport.year,
+        period: latestReport.period,
+        periodString: latestReport.periodString,
+        storeName: latestReport.storeName,
+        company: latestReport.company,
+        keyMetrics: keyMetrics,
+        updatedAt: latestReport.updatedAt,
+      })
+    } catch (error: any) {
+      console.error('Error in getLatestPeriod:', error)
+      return response.internalServerError({
+        error: 'Failed to fetch latest P&L period',
+        message: error.message,
+      })
+    }
+  }
+
 }
 
