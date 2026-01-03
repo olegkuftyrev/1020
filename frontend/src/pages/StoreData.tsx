@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useSWR from 'swr'
+import { Link } from 'react-router-dom'
 import { parsePDF, parseProductRows, ProductData, applyConversionData } from '@/utils/pdfParser'
 import { ProductsTable } from '@/components/ProductsTable'
 import { productsFetcher, pdfMetadataFetcher, syncProducts } from '@/utils/productsApi'
@@ -231,6 +232,15 @@ export function StoreData() {
             )}
           </div>
         )}
+      </div>
+      
+      {/* Button to Reports page */}
+      <div className="flex justify-center mt-6">
+        <Link to="/reports">
+          <Button variant="outline" size="lg" className="iron-border">
+            View Reports
+          </Button>
+        </Link>
       </div>
     </div>
   )

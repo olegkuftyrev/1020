@@ -10,6 +10,7 @@ import { PL } from './pages/PL'
 import { PLPeriodDetail } from './pages/PLPeriodDetail'
 import { PLQuestions } from './pages/PLQuestions'
 import { PLQuestionTest } from './pages/PLQuestionTest'
+import { EasyLearning } from './pages/EasyLearning'
 
 function App() {
   const { isAuthenticated, verify } = useAuthStore()
@@ -32,6 +33,7 @@ function App() {
             <Route path="/pl/:year/:period" element={<PLPeriodDetail />} />
             <Route path="/pl-questions" element={<PLQuestions />} />
             <Route path="/pl-questions/:id" element={<PLQuestionTest />} />
+            <Route path="/easy-learning" element={<EasyLearning />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
