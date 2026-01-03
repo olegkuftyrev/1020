@@ -339,21 +339,21 @@ export function StoreData() {
                       <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
                         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
                           <AlertTriangle className="h-4 w-4 text-red-500" />
-                          <span>Red Rows</span>
+                          <span>Critical</span>
                         </div>
                         <div className="text-2xl font-bold text-red-500 text-center">{colorCounts.redCount}</div>
                         <p className="text-xs text-muted-foreground text-center mt-2">
-                          Difference &gt; 3 between W38-W41
+                          AVG &gt; 3 Between 4 weeks
                         </p>
                       </div>
                       <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
                         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
                           <AlertCircle className="h-4 w-4 text-yellow-500" />
-                          <span>Yellow Rows</span>
+                          <span>Attention Required</span>
                         </div>
                         <div className="text-2xl font-bold text-yellow-500 text-center">{colorCounts.yellowCount}</div>
                         <p className="text-xs text-muted-foreground text-center mt-2">
-                          Difference 1-3 between W38-W41
+                          AVG 1-3 Between 4 weeks
                         </p>
                       </div>
                       <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4">
@@ -363,19 +363,19 @@ export function StoreData() {
                         </div>
                         <div className="text-2xl font-bold text-green-500 text-center">{colorCounts.regularCount}</div>
                         <p className="text-xs text-muted-foreground text-center mt-2">
-                          Difference ≤ 1 between W38-W41
+                          AVG ≤ 1 Between 4 weeks
                         </p>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-primary/20">
                       <p className="text-sm text-muted-foreground mb-2">
-                        <strong>How it works:</strong> The system compares the weekly values (W38, W39, W40, W41) for each product. 
-                        It calculates the difference between the highest and lowest values.
+                        <strong>How it works:</strong> The system compares the weekly values across 4 weeks for each product. 
+                        It calculates the average (AVG) between the weekly values.
                       </p>
                       <div className="text-sm text-muted-foreground space-y-1">
-                        <p><strong className="text-red-400">Red rows</strong> indicate extreme variations (difference &gt; 3)</p>
-                        <p><strong className="text-yellow-400">Yellow rows</strong> indicate moderate variations (difference 1-3)</p>
-                        <p><strong className="text-green-400">Green rows</strong> show consistent values (difference ≤ 1)</p>
+                        <p><strong className="text-red-400">Critical</strong> indicate extreme variations (AVG &gt; 3)</p>
+                        <p><strong className="text-yellow-400">Attention Required</strong> indicate moderate variations (AVG 1-3)</p>
+                        <p><strong className="text-green-400">No discrepancies</strong> show consistent values (AVG ≤ 1)</p>
                       </div>
                     </div>
                   </CardContent>
