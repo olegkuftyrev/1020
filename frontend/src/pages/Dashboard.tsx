@@ -1132,7 +1132,7 @@ export function Dashboard() {
         </div>
         
         <div className="grid gap-4 md:grid-cols-2">
-          <Link to="/store-data">
+          <Link to="/1k">
             <div className="rounded-lg border border-primary/20 bg-card/60 p-6 hover:border-primary/40 transition-all cursor-pointer">
               <h4 className="font-semibold text-foreground mb-2">Manage Products</h4>
               <p className="text-sm text-muted-foreground">

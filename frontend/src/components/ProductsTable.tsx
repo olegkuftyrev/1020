@@ -213,6 +213,8 @@ interface ProductsTableProps {
 // Порядок категорий
 const CATEGORY_ORDER: Record<string, number> = {
   'WIF': 0,
+  'WIF Beef': 0.5,
+  'Seafood': 0.75,
   'Appetizers': 1,
   'Sides': 2,
   'Sauce Cart': 3,
@@ -225,7 +227,25 @@ const CATEGORY_ORDER: Record<string, number> = {
   'Cups & lids': 10,
   'Prep Area': 11,
   'FoH': 12,
+  'Catering': 12.5,
+  'Cub': 12.75,
+  'Bags': 12.9,
   'Others': 13,
+}
+
+// Display names for categories
+const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  'WIF': 'WIF Chicken',
+}
+
+function getCategoryDisplayName(category: string, products?: ProductData[]): string {
+  // Special handling for PCB category
+  if (category === 'PCB' && products) {
+    const hasP25343 = products.some(p => p.productNumber === 'P25343')
+    return hasP25343 ? 'PCB & Drinks' : 'PCB'
+  }
+  
+  return CATEGORY_DISPLAY_NAMES[category] || category
 }
 
 function CategoryTable({
@@ -260,7 +280,7 @@ function CategoryTable({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold text-primary iron-text-glow">{category}</h3>
+      <h3 className="text-xl font-bold text-primary iron-text-glow">{getCategoryDisplayName(category, products)}</h3>
       <div className="overflow-hidden rounded-lg border border-primary/20">
         <Table>
           <TableHeader>
@@ -586,7 +606,7 @@ export function ProductsTable({ data, onDataChange }: ProductsTableProps) {
           <SelectContent className="bg-card border-primary/20">
             <SelectItem value="all">All Categories</SelectItem>
             {availableCategories.map(category => (
-              <SelectItem key={category} value={category}>{category}</SelectItem>
+              <SelectItem key={category} value={category}>{getCategoryDisplayName(category, data)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -597,7 +617,7 @@ export function ProductsTable({ data, onDataChange }: ProductsTableProps) {
         <div className="text-sm text-muted-foreground">
           Showing {filteredData.length} of {data.length} product{data.length !== 1 ? 's' : ''}
           {searchQuery && ` matching "${searchQuery}"`}
-          {selectedCategoryFilter !== 'all' && ` in ${selectedCategoryFilter}`}
+          {selectedCategoryFilter !== 'all' && ` in ${getCategoryDisplayName(selectedCategoryFilter, data)}`}
         </div>
       )}
 

@@ -39,7 +39,7 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/store-data" element={<StoreData />} />
+            <Route path="/1k" element={<StoreData />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/pl" element={<PL />} />
             <Route path="/pl/:year/:period" element={<PLPeriodDetail />} />

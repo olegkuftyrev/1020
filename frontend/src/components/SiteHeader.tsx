@@ -22,7 +22,7 @@ export function SiteHeader() {
 
   const navLinks = [
     { path: '/', label: 'Dashboard' },
-    { path: '/store-data', label: '$1K Usage' },
+    { path: '/1k', label: '$1K Usage' },
     { path: '/pl', label: 'P&L', isActive: () => isActive('/pl') || location.pathname.startsWith('/pl/') },
     { path: '/easy-learning', label: 'Easy Learning' },
   ]

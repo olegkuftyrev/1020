@@ -15,6 +15,21 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
+// Display names for categories
+const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  'WIF': 'WIF Chicken',
+}
+
+function getCategoryDisplayName(category: string, products?: ProductData[]): string {
+  // Special handling for PCB category
+  if (category === 'PCB' && products) {
+    const hasP25343 = products.some(p => p.productNumber === 'P25343')
+    return hasP25343 ? 'PCB & Drinks' : 'PCB'
+  }
+  
+  return CATEGORY_DISPLAY_NAMES[category] || category
+}
+
 function exportToCSV(data: any[], filename: string) {
   if (data.length === 0) return
 
@@ -53,7 +68,7 @@ function exportToJSON(data: any[], filename: string) {
 
 export function Reports() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [reportType, setReportType] = useState<'summary' | 'detailed'>('summary')
+  const [reportType, setReportType] = useState<'summary' | 'detailed'>('detailed')
 
   const { data: categorySummary, isLoading: categoryLoading } = useSWR<CategorySummary[]>(
     '/products/category-summary',
@@ -139,7 +154,7 @@ export function Reports() {
               <SelectContent className="bg-card border-primary/20">
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  <SelectItem key={cat} value={cat}>{getCategoryDisplayName(cat, allProducts)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -213,7 +228,7 @@ export function Reports() {
                 <TableBody>
                   {filteredSummary.map((category) => (
                     <TableRow key={category.group} className="hover:bg-primary/5">
-                      <TableCell className="font-medium">{category.group}</TableCell>
+                      <TableCell className="font-medium">{getCategoryDisplayName(category.group, allProducts)}</TableCell>
                       <TableCell className="text-right">{category.productCount}</TableCell>
                       <TableCell className="text-right">{category.averageUsage.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
@@ -245,7 +260,7 @@ export function Reports() {
         <div className="rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm p-6 md:p-8 shadow-lg">
           <h3 className="text-xl font-bold text-foreground mb-4">
             Detailed Products Report
-            {selectedCategory !== 'all' && ` - ${selectedCategory}`}
+            {selectedCategory !== 'all' && ` - ${getCategoryDisplayName(selectedCategory, allProducts)}`}
           </h3>
           
           {isLoading ? (

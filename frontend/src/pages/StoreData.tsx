@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import useSWR from 'swr'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -9,6 +9,29 @@ import { Dropzone } from '@/components/ui/dropzone'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AlertTriangle, AlertCircle, Check, ChevronDown, ChevronUp } from 'lucide-react'
+
+// Function to get anomaly level (same logic as in ProductsTable)
+function getAnomalyLevel(product: ProductData): 'none' | 'anomaly' | 'extreme' {
+  const w38 = parseFloat(product.w38) || 0
+  const w39 = parseFloat(product.w39) || 0
+  const w40 = parseFloat(product.w40) || 0
+  const w41 = parseFloat(product.w41) || 0
+  
+  const values = [w38, w39, w40, w41]
+  const max = Math.max(...values)
+  const min = Math.min(...values)
+  const difference = max - min
+  
+  if (difference > 3) {
+    return 'extreme'
+  } else if (difference > 1) {
+    return 'anomaly'
+  }
+  
+  return 'none'
+}
 
 export function StoreData() {
   const [isParsing, setIsParsing] = useState(false)
@@ -18,6 +41,7 @@ export function StoreData() {
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const replaceFileInputRef = useRef<HTMLInputElement>(null)
+  const [isCardExpanded, setIsCardExpanded] = useState(false)
 
   // Load products from database using SWR
   const { data: products = [], mutate: mutateProducts, isLoading: isLoadingProducts, error: productsError } = useSWR<ProductData[]>(
@@ -172,6 +196,35 @@ export function StoreData() {
 
   const loading = isLoadingProducts || isParsing
 
+  // Count rows by color across all products
+  const colorCounts = useMemo(() => {
+    let yellowCount = 0
+    let redCount = 0
+    let regularCount = 0
+
+    products.forEach(product => {
+      const anomalyLevel = getAnomalyLevel(product)
+      if (anomalyLevel === 'extreme') {
+        redCount++
+      } else if (anomalyLevel === 'anomaly') {
+        yellowCount++
+      } else {
+        regularCount++
+      }
+    })
+
+    return { yellowCount, redCount, regularCount }
+  }, [products])
+
+  // Set initial expanded state based on whether there are red or yellow rows
+  useEffect(() => {
+    if (colorCounts.redCount > 0 || colorCounts.yellowCount > 0) {
+      setIsCardExpanded(true)
+    } else {
+      setIsCardExpanded(false)
+    }
+  }, [colorCounts.redCount, colorCounts.yellowCount])
+
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm p-6 md:p-8 shadow-lg">
@@ -263,6 +316,52 @@ export function StoreData() {
                 <span>Title: {pdfMetadata.title}</span>
               )}
             </div>
+
+            {/* Color Counts Card */}
+            {products.length > 0 && (
+              <Card className="border-primary/20 bg-card/60">
+                <CardHeader 
+                  className="cursor-pointer hover:bg-card/20 transition-colors"
+                  onClick={() => setIsCardExpanded(!isCardExpanded)}
+                >
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl font-bold text-foreground">Manual Validation required</CardTitle>
+                    {isCardExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                </CardHeader>
+                {isCardExpanded && (
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
+                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                          <span>Red Rows</span>
+                        </div>
+                        <div className="text-2xl font-bold text-red-500 text-center">{colorCounts.redCount}</div>
+                      </div>
+                      <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
+                          <AlertCircle className="h-4 w-4 text-yellow-500" />
+                          <span>Yellow Rows</span>
+                        </div>
+                        <div className="text-2xl font-bold text-yellow-500 text-center">{colorCounts.yellowCount}</div>
+                      </div>
+                      <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4">
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>No discrepancies</span>
+                        </div>
+                        <div className="text-2xl font-bold text-green-500 text-center">{colorCounts.regularCount}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            )}
             
             {products.length > 0 ? (
               <ProductsTable 

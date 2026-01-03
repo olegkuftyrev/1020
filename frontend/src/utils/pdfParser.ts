@@ -164,12 +164,20 @@ const WIC_PRODUCTS = new Set([
   'P10028',
   'P10019',
   'P10027',
-  'P5020',
-  'P5017',
-  'P5007',
   'P10008',
   'P10018',
+])
+
+// Определяем продукты группы Seafood
+const SEAFOOD_PRODUCTS = new Set([
   'P16032',
+])
+
+// Определяем продукты группы WIF Beef
+const WIF_BEEF_PRODUCTS = new Set([
+  'P5007',
+  'P5017',
+  'P5020',
 ])
 
 // Определяем продукты группы Appetizers
@@ -184,6 +192,7 @@ const SIDES_PRODUCTS = new Set([
   'P1102',
   'P1112',
   'P2002',
+  'P19149',
 ])
 
 // Определяем продукты группы Sauce Cart
@@ -196,6 +205,8 @@ const SAUCE_CART_PRODUCTS = new Set([
   'P1268',
   'P1107',
   'P1295',
+  'P1792',
+  'P19002',
 ])
 
 // Определяем продукты группы Condements
@@ -203,6 +214,8 @@ const CONDEMENTS_PRODUCTS = new Set([
   'P1652',
   'P1566',
   'P1151',
+  'P1124',
+  'P23001',
 ])
 
 // Определяем продукты группы Vegetables
@@ -215,7 +228,6 @@ const VEGETABLES_PRODUCTS = new Set([
   'P19055',
   'P19085',
   'P19147',
-  'P19149',
   'P19169',
   'P19186',
   'P19187',
@@ -234,6 +246,7 @@ const BIBS_PRODUCTS = new Set([
   'P25346',
   'P25933',
   'P25943',
+  'P25077',
 ])
 
 // Определяем продукты группы PCB
@@ -242,6 +255,8 @@ const PCB_PRODUCTS = new Set([
   'P25422',
   'P25423',
   'P25424',
+  'P25343',
+  'P25341',
 ])
 
 // Определяем продукты группы Bottles
@@ -250,6 +265,9 @@ const BOTTLES_PRODUCTS = new Set([
   'P25911',
   'P25973',
   'P25980',
+  'P25959',
+  'P25417',
+  'P25403',
 ])
 
 // Определяем продукты группы FoH Packaging
@@ -259,8 +277,6 @@ const FOH_PACKAGING_PRODUCTS = new Set([
   'P35130',
   'P35509',
   'P35508',
-  'P35275',
-  'P36029',
   'P35719',
 ])
 
@@ -292,14 +308,37 @@ const FOH_PRODUCTS = new Set([
   'P35048',
   'P35213',
   'P35432',
+])
+
+// Определяем продукты группы Catering
+const CATERING_PRODUCTS = new Set([
+  'P35659',
   'P35542',
+])
+
+// Определяем продукты группы Cub
+const CUB_PRODUCTS = new Set([
+  'P25353',
+  'P1684',
+])
+
+// Определяем продукты группы Bags
+const BAGS_PRODUCTS = new Set([
+  'P35522',
+  'P35275',
+  'P36029',
+  'P35521',
 ])
 
 export function applyConversionData(products: ProductData[]): ProductData[] {
   return products.map(product => {
     let group = 'Others'
-    if (WIC_PRODUCTS.has(product.productNumber)) {
+    if (WIF_BEEF_PRODUCTS.has(product.productNumber)) {
+      group = 'WIF Beef'
+    } else if (WIC_PRODUCTS.has(product.productNumber)) {
       group = 'WIF'
+    } else if (SEAFOOD_PRODUCTS.has(product.productNumber)) {
+      group = 'Seafood'
     } else if (APPETIZERS_PRODUCTS.has(product.productNumber)) {
       group = 'Appetizers'
     } else if (SIDES_PRODUCTS.has(product.productNumber)) {
@@ -324,6 +363,12 @@ export function applyConversionData(products: ProductData[]): ProductData[] {
       group = 'Prep Area'
     } else if (FOH_PRODUCTS.has(product.productNumber)) {
       group = 'FoH'
+    } else if (CATERING_PRODUCTS.has(product.productNumber)) {
+      group = 'Catering'
+    } else if (CUB_PRODUCTS.has(product.productNumber)) {
+      group = 'Cub'
+    } else if (BAGS_PRODUCTS.has(product.productNumber)) {
+      group = 'Bags'
     }
     
     return {
