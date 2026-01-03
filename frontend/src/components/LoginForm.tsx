@@ -87,7 +87,8 @@ export function LoginForm() {
     try {
       await login(pinString)
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid PIN. Access denied.')
+      const errorMessage = err?.response?.data?.error || err?.message || 'Invalid PIN. Access denied.'
+      setError(errorMessage)
       setPin(Array(6).fill(''))
       inputRefs.current[0]?.focus()
     }

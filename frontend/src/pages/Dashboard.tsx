@@ -3,9 +3,8 @@ import useSWR from 'swr'
 import { Link } from 'react-router-dom'
 import { getCategorySummary, type CategorySummary } from '@/utils/productsApi'
 import { plPeriodsFetcher, plReportFetcher } from '@/utils/plApi'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { ArrowUp, ArrowDown, TrendingUp } from 'lucide-react'
+import { ArrowUp, ArrowDown } from 'lucide-react'
 import { parseCSVFile, type ParsedCSVData } from '@/utils/csvParser'
 import Papa from 'papaparse'
 import { getGemData, saveGemData, type GemData } from '@/utils/gemApi'
@@ -31,405 +30,6 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 
-function CategoryCard({ category }: { category: CategorySummary }) {
-  return (
-    <div className="rounded-lg border border-primary/20 bg-card/60 p-4 hover:border-primary/40 transition-all">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="font-semibold text-foreground">{category.group}</h4>
-        <span className="text-sm text-muted-foreground">{category.productCount} products</span>
-      </div>
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <div className="text-muted-foreground text-xs mb-1">Avg Usage</div>
-          <div className="font-medium text-foreground">{category.averageUsage.toFixed(2)}</div>
-        </div>
-        <div>
-          <div className="text-muted-foreground text-xs mb-1">Avg CS/1k</div>
-          <div className="font-medium text-foreground">
-            {category.averageCsPer1k > 0 ? category.averageCsPer1k.toFixed(2) : '-'}
-          </div>
-        </div>
-        <div className="col-span-2">
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-muted-foreground">Conversion Rate</span>
-            <span className="font-medium text-foreground">{category.conversionRate.toFixed(1)}%</span>
-          </div>
-          <div className="w-full bg-primary/10 rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all"
-              style={{ width: `${Math.min(category.conversionRate, 100)}%` }}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function RadialChartCard({ 
-  title, 
-  description, 
-  dataKey1,
-  dataKey2,
-  dataValue1,
-  dataValue2,
-  label1,
-  label2,
-  color1,
-  color2,
-  totalLabel,
-  totalSurveys,
-  trend,
-  trendLabel
-}: { 
-  title: string
-  description: string
-  dataKey1: string
-  dataKey2: string
-  dataValue1: number
-  dataValue2: number
-  label1: string
-  label2: string
-  color1: string
-  color2: string
-  totalLabel: string
-  totalSurveys?: number
-  trend?: string
-  trendLabel?: string
-}) {
-  const chartData = [
-    { [dataKey1]: dataValue1, [dataKey2]: dataValue2 },
-  ]
-
-  const chartConfig = {
-    [dataKey1]: {
-      label: label1,
-      color: color1,
-    },
-    [dataKey2]: {
-      label: label2,
-      color: color2,
-    },
-  } satisfies ChartConfig
-
-  return (
-    <Card className="flex flex-col">
-      <CardHeader className="items-center pb-0">
-        <CardTitle className="mb-4">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent className="flex flex-1 items-center pb-2">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square w-full max-w-[250px]"
-        >
-          <RadialBarChart
-            data={chartData}
-            startAngle={180}
-            endAngle={0}
-            innerRadius={80}
-            outerRadius={130}
-          >
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    const total = dataValue1 + dataValue2
-                    const percentage = total > 0 ? Math.round((dataValue1 / total) * 100) : 0
-                    return (
-                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-2xl font-bold"
-                        >
-                          {percentage}{totalLabel}
-                        </tspan>
-                      </text>
-                    )
-                  }
-                }}
-              />
-            </PolarRadiusAxis>
-            <RadialBar
-              dataKey={dataKey1}
-              stackId="a"
-              cornerRadius={5}
-              fill={`var(--color-${dataKey1})`}
-              className="stroke-transparent stroke-2"
-            />
-            <RadialBar
-              dataKey={dataKey2}
-              fill={`var(--color-${dataKey2})`}
-              stackId="a"
-              cornerRadius={5}
-              className="stroke-transparent stroke-2"
-            />
-          </RadialBarChart>
-        </ChartContainer>
-      </CardContent>
-      {totalSurveys && (
-        <CardFooter className="flex-col gap-2 text-sm pt-0 pb-4">
-          <div className="text-muted-foreground text-center leading-none">
-            {dataValue1} out of {totalSurveys} surveys
-          </div>
-        </CardFooter>
-      )}
-      {trend && (
-        <CardFooter className="flex-col gap-2 text-sm">
-          <div className="flex items-center gap-2 leading-none font-medium">
-            {trend} <TrendingUp className="h-4 w-4" />
-          </div>
-          {trendLabel && (
-            <div className="text-muted-foreground leading-none">
-              {trendLabel}
-            </div>
-          )}
-        </CardFooter>
-      )}
-    </Card>
-  )
-}
-
-// Function to extract gem data from CSV rows
-function extractGemData(rawRows: Array<Record<string, string>>): { count: string; tasteOfFood: string; accuracyOfOrder: string } | null {
-  // Convert rows to format with "_N" keys for columns (same as normalizeMatrix does)
-  const allKeys = new Set<string>()
-  rawRows.forEach(row => {
-    Object.keys(row).forEach(key => allKeys.add(key))
-  })
-  
-  const sortedKeys = Array.from(allKeys).sort()
-  const rowObjects = rawRows.map(row => {
-    const obj: Record<string, string> = {}
-    sortedKeys.forEach((key, idx) => {
-      obj[`_${idx + 2}`] = (row[key] || '').toString().trim() || '-'
-    })
-    return obj
-  })
-  
-  // Filter each row to keep only the keys we want
-  const filteredRows = rowObjects.map(row => {
-    const filtered: Record<string, string> = {}
-    if (row._2 !== undefined) filtered._2 = row._2
-    if (row._8 !== undefined) filtered._8 = row._8
-    if (row._13 !== undefined) filtered._13 = row._13
-    return filtered
-  }).filter(row => Object.keys(row).length > 0)
-  
-  // Remove the first object (skip index 0)
-  const filteredRowsWithoutFirst = filteredRows.slice(1)
-  
-  // Remove second and third objects (indices 1 and 2 from the filtered array)
-  const finalRows = [
-    filteredRowsWithoutFirst[0], // Keep first (labels)
-    ...filteredRowsWithoutFirst.slice(3) // Skip indices 1 and 2, keep the rest
-  ]
-  
-  // If we have at least 2 rows, extract values
-  if (finalRows.length >= 2) {
-    const values = finalRows[1]
-    
-    const count = values._2 || ''
-    const tasteOfFood = values._8 || ''
-    const accuracyOfOrder = values._13 || ''
-    
-    if (count && tasteOfFood && accuracyOfOrder) {
-      return { count, tasteOfFood, accuracyOfOrder }
-    }
-  }
-  
-  return null
-}
-
-// Function to format gem data for display
-function formatGemData(gemData: GemData | { count: string; tasteOfFood: string; accuracyOfOrder: string }): string {
-  const lines: string[] = []
-  
-  lines.push(`<span style="color: #ef4444; font-weight: bold;">Count: ${gemData.count}</span>`)
-  lines.push(`<span style="color: #ef4444; font-weight: bold;">Taste of Food ${gemData.tasteOfFood}</span>`)
-  lines.push(`<span style="color: #ef4444; font-weight: bold;">Accuracy of Order ${gemData.accuracyOfOrder}</span>`)
-  
-  return lines.join('<br/>')
-}
-
-// Function to extract values from JSON string and save to gem
-async function extractAndSaveGemValues(jsonString: string, saveGemDataFn: (data: { count: string; tasteOfFood: string; accuracyOfOrder: string }) => Promise<any>, mutateGemDataFn: () => void): Promise<string> {
-  // Extract values from JSON
-  let count = ''
-  let tasteOfFood = ''
-  let accuracyOfOrder = ''
-  
-  // Find "113" or any number in "_2" field (count value)
-  const countMatch = jsonString.match(/"_2"\s*:\s*"([^"]+)"/)
-  if (countMatch) {
-    count = countMatch[1]
-  }
-  
-  // Find "60.7%" or similar in "_8" field (tasteOfFood value)
-  const tasteMatch = jsonString.match(/"_8"\s*:\s*"([^"]+)"/)
-  if (tasteMatch) {
-    tasteOfFood = tasteMatch[1]
-  }
-  
-  // Find "72.1%" or similar in "_13" field (accuracyOfOrder value)
-  const accuracyMatch = jsonString.match(/"_13"\s*:\s*"([^"]+)"/)
-  if (accuracyMatch) {
-    accuracyOfOrder = accuracyMatch[1]
-  }
-  
-  // Save to database if all values found
-  if (count && tasteOfFood && accuracyOfOrder) {
-    try {
-      await saveGemDataFn({ count, tasteOfFood, accuracyOfOrder })
-      mutateGemDataFn()
-    } catch (error) {
-      console.error('Failed to save gem data:', error)
-    }
-  }
-  
-  // Return highlighted values for display
-  const values: string[] = []
-  if (count) {
-    values.push(`<span style="color: #ef4444; font-weight: bold;">${count}</span>`)
-  }
-  if (tasteOfFood) {
-    values.push(`<span style="color: #ef4444; font-weight: bold;">${tasteOfFood}</span>`)
-  }
-  if (accuracyOfOrder) {
-    values.push(`<span style="color: #ef4444; font-weight: bold;">${accuracyOfOrder}</span>`)
-  }
-  
-  return values.join('<br/>')
-}
-
-// Function to highlight and show only specific values in JSON string
-function highlightJSONValues(jsonString: string): string {
-  // Extract only the values we want to show
-  const values: string[] = []
-  
-  // Find "113" (count value) or any value in "_2" field
-  const countMatch = jsonString.match(/"_2"\s*:\s*"([^"]+)"/)
-  if (countMatch) {
-    values.push(`<span style="color: #ef4444; font-weight: bold;">${countMatch[1]}</span>`)
-  }
-  
-  // Find "60.7%" or similar in "_8" field (tasteOfFood value)
-  const tasteMatch = jsonString.match(/"_8"\s*:\s*"([^"]+)"/)
-  if (tasteMatch) {
-    values.push(`<span style="color: #ef4444; font-weight: bold;">${tasteMatch[1]}</span>`)
-  }
-  
-  // Find "72.1%" or similar in "_13" field (accuracyOfOrder value)
-  const accuracyMatch = jsonString.match(/"_13"\s*:\s*"([^"]+)"/)
-  if (accuracyMatch) {
-    values.push(`<span style="color: #ef4444; font-weight: bold;">${accuracyMatch[1]}</span>`)
-  }
-  
-  // Return only the values, one per line
-  return values.join('<br/>')
-}
-
-// Component to display and save gem values
-function GemValuesDisplay({ 
-  jsonString, 
-  rawJson,
-  saveGemData, 
-  mutateGemData 
-}: { 
-  jsonString: string
-  rawJson?: any
-  saveGemData: (data: { count?: string; tasteOfFood?: string; accuracyOfOrder?: string; rawJson?: any }) => Promise<any>
-  mutateGemData: () => void
-}) {
-  const [displayHtml, setDisplayHtml] = useState<string>('')
-  
-  useEffect(() => {
-    // If rawJson is provided, save it directly
-    if (rawJson) {
-      console.log('GemValuesDisplay: Saving raw JSON to database...', rawJson)
-      saveGemData({ rawJson })
-        .then((saved) => {
-          console.log('GemValuesDisplay: Raw JSON saved successfully!', saved)
-          mutateGemData()
-        })
-        .catch(error => {
-          console.error('GemValuesDisplay: Failed to save raw JSON:', error)
-        })
-    }
-    
-    // Parse JSON string to extract values for display
-    try {
-      const data = rawJson || JSON.parse(jsonString)
-      console.log('GemValuesDisplay: Data for display:', data)
-      
-      if (Array.isArray(data) && data.length > 0) {
-        // Find the row with actual values (skip headers)
-        let count = ''
-        let tasteOfFood = ''
-        let accuracyOfOrder = ''
-        
-        // Find the row with actual data values (usually the last row)
-        // Based on CSV structure (row 6, 0-indexed):
-        // Column 3 (index 3, key _4): "66" = Count
-        // Column 9 (index 9, key _10): "60.70%" = Taste of Food  
-        // Column 14 (index 14, key _15): "72.10%" = Accuracy of Order
-        for (const row of data) {
-          // Check if this row has numeric/percentage values (data row, not header)
-          const countValue = row._4 ? String(row._4).trim() : '' // Column 3 (0-indexed)
-          const tasteValue = row._10 ? String(row._10).trim() : '' // Column 9 (0-indexed)
-          const accuracyValue = row._15 ? String(row._15).trim() : '' // Column 14 (0-indexed)
-          
-          // Check if _4 looks like a count (number)
-          if (/^\d+$/.test(countValue)) {
-            count = countValue
-          }
-          // Check if _10 looks like a percentage (Taste of Food)
-          if (/%/.test(tasteValue)) {
-            tasteOfFood = tasteValue
-          }
-          // Check if _15 looks like a percentage (Accuracy of Order)
-          if (/%/.test(accuracyValue)) {
-            accuracyOfOrder = accuracyValue
-          }
-          
-          // If we found all three values, use this row
-          if (count && tasteOfFood && accuracyOfOrder) {
-            break
-          }
-        }
-        
-        // Set display HTML
-        const values: string[] = []
-        if (count) {
-          values.push(`<span style="color: #ef4444; font-weight: bold;">${count}</span>`)
-        }
-        if (tasteOfFood) {
-          values.push(`<span style="color: #ef4444; font-weight: bold;">${tasteOfFood}</span>`)
-        }
-        if (accuracyOfOrder) {
-          values.push(`<span style="color: #ef4444; font-weight: bold;">${accuracyOfOrder}</span>`)
-        }
-        
-        setDisplayHtml(values.join('<br/>'))
-      }
-    } catch (error) {
-      console.error('GemValuesDisplay: Failed to parse JSON:', error)
-    }
-  }, [jsonString, rawJson, saveGemData, mutateGemData])
-  
-  return (
-    <div 
-      className="text-sm text-foreground break-words"
-      dangerouslySetInnerHTML={{ __html: displayHtml }}
-    />
-  )
-}
-
 export function Dashboard() {
   const [csvData, setCsvData] = useState<ParsedCSVData | null>(null)
   const [csvRawRows, setCsvRawRows] = useState<Array<Record<string, string>> | null>(null)
@@ -448,7 +48,7 @@ export function Dashboard() {
     }
   )
 
-  const { data: categorySummary, isLoading: categoryLoading, error: categoryError } = useSWR<CategorySummary[]>(
+  const { data: categorySummary, isLoading: categoryLoading } = useSWR<CategorySummary[]>(
     '/products/category-summary',
     getCategorySummary,
     {
@@ -477,23 +77,27 @@ export function Dashboard() {
     
     if (periods2025.data) {
       periods2025.data.forEach((p: any) => {
-        periods.push({
-          year: 2025,
-          period: p.period,
-          periodString: `P${p.period.toString().padStart(2, '0')}`,
-          updatedAt: p.updatedAt,
-        })
+        if (p.period != null && p.updatedAt) {
+          periods.push({
+            year: 2025,
+            period: p.period,
+            periodString: `P${String(p.period).padStart(2, '0')}`,
+            updatedAt: p.updatedAt,
+          })
+        }
       })
     }
     
     if (periods2026.data) {
       periods2026.data.forEach((p: any) => {
-        periods.push({
-          year: 2026,
-          period: p.period,
-          periodString: `P${p.period.toString().padStart(2, '0')}`,
-          updatedAt: p.updatedAt,
-        })
+        if (p.period != null && p.updatedAt) {
+          periods.push({
+            year: 2026,
+            period: p.period,
+            periodString: `P${String(p.period).padStart(2, '0')}`,
+            updatedAt: p.updatedAt,
+          })
+        }
       })
     }
 
@@ -748,154 +352,7 @@ export function Dashboard() {
     return metrics
   }, [latestPeriodReport])
 
-  const topCategories = useMemo(() => {
-    if (!categorySummary) return []
-    return categorySummary.slice(0, 6)
-  }, [categorySummary])
-
   const isLoading = periodsLoading || latestReportLoading || categoryLoading
-
-  // Extract survey metrics from CSV data
-  const surveyMetrics = useMemo(() => {
-    if (!csvData || !csvData.data || csvData.data.length === 0) {
-      return null
-    }
-
-    const firstColumn = csvData.headers[0]
-    const currentPeriodColumn = csvData.headers.find(header => {
-      const lower = header.toLowerCase()
-      return !lower.includes('prior') && !lower.includes('last year')
-    }) || csvData.headers[1]
-
-    if (!currentPeriodColumn || !firstColumn) {
-      return null
-    }
-
-    let totalCount = 0
-    let tasteOfFoodPercent = 0
-    let accuracyOfOrderPercent = 0
-
-    // Find all metrics in one pass
-    csvData.data.forEach(row => {
-      const metricName = (row[firstColumn] || '').toLowerCase().trim()
-      const value = (row[currentPeriodColumn] || '').toString().trim()
-      
-      // Find total count - look for "total count" in metric name and numeric value
-      if (metricName.includes('total') && metricName.includes('count')) {
-        const count = parseInt(value, 10)
-        if (!isNaN(count) && count > 0) {
-          totalCount = count
-        }
-      }
-      
-      // Also check if value is "63" and metric name includes "total"
-      if (value === '63' && metricName.includes('total')) {
-        totalCount = 63
-      }
-      
-      // Find Taste of Food percentage
-      if ((metricName.includes('taste') || metricName.includes('food')) && !metricName.includes('overall')) {
-        const percentMatch = value.match(/(\d+\.?\d*)%?/)
-        if (percentMatch) {
-          const percent = parseFloat(percentMatch[1])
-          if (!isNaN(percent) && percent > 0) {
-            tasteOfFoodPercent = percent
-          }
-        }
-      }
-      
-      // Find Accuracy of Order percentage
-      if (metricName.includes('accuracy') || (metricName.includes('order') && !metricName.includes('taste'))) {
-        const percentMatch = value.match(/(\d+\.?\d*)%?/)
-        if (percentMatch) {
-          const percent = parseFloat(percentMatch[1])
-          if (!isNaN(percent) && percent > 0) {
-            accuracyOfOrderPercent = percent
-          }
-        }
-      }
-    })
-
-    // If we don't have total count, try to find it as just "63" in any row
-    if (totalCount === 0) {
-      csvData.data.forEach(row => {
-        const value = (row[currentPeriodColumn] || '').toString().trim()
-        if (value === '63') {
-          totalCount = 63
-        }
-      })
-    }
-
-    if (totalCount === 0 || (tasteOfFoodPercent === 0 && accuracyOfOrderPercent === 0)) {
-      return null
-    }
-
-    const tasteOfFoodCount = tasteOfFoodPercent > 0 ? Math.round((tasteOfFoodPercent / 100) * totalCount) : 0
-    const accuracyOfOrderCount = accuracyOfOrderPercent > 0 ? Math.round((accuracyOfOrderPercent / 100) * totalCount) : 0
-
-    return {
-      totalCount,
-      tasteOfFood: {
-        percent: tasteOfFoodPercent,
-        count: tasteOfFoodCount
-      },
-      accuracyOfOrder: {
-        percent: accuracyOfOrderPercent,
-        count: accuracyOfOrderCount
-      }
-    }
-  }, [csvData])
-
-  // Extract simple metrics from CSV data
-  const simpleMetrics = useMemo(() => {
-    if (!csvData || !csvData.data || csvData.data.length === 0) {
-      return null
-    }
-
-    const firstColumn = csvData.headers[0]
-    const currentPeriodColumn = csvData.headers.find(header => {
-      const lower = header.toLowerCase()
-      return !lower.includes('prior') && !lower.includes('last year')
-    }) || csvData.headers[1]
-
-    if (!currentPeriodColumn || !firstColumn) {
-      return null
-    }
-
-    let tasteOfFoodPercent: string | null = null
-    let accuracyOfOrderPercent: string | null = null
-
-    // Look through all rows to extract values
-    for (const row of csvData.data) {
-      const metricName = (row[firstColumn] || '').toLowerCase().trim()
-      const value = (row[currentPeriodColumn] || '').toString().trim()
-
-      // Extract Taste of Food percentage
-      if (!tasteOfFoodPercent && (metricName.includes('taste') || metricName.includes('food')) && !metricName.includes('overall')) {
-        const percentMatch = value.match(/(\d+\.?\d*)%?/)
-        if (percentMatch) {
-          tasteOfFoodPercent = percentMatch[1]
-        }
-      }
-
-      // Extract Accuracy of Order percentage
-      if (!accuracyOfOrderPercent && (metricName.includes('accuracy') || (metricName.includes('order') && !metricName.includes('taste')))) {
-        const percentMatch = value.match(/(\d+\.?\d*)%?/)
-        if (percentMatch) {
-          accuracyOfOrderPercent = percentMatch[1]
-        }
-      }
-    }
-
-    if (!tasteOfFoodPercent && !accuracyOfOrderPercent) {
-      return null
-    }
-
-    return {
-      tasteOfFoodPercent,
-      accuracyOfOrderPercent
-    }
-  }, [csvData])
 
   // Normalize CSV data using matrix normalization function
   const normalizeMatrix = useMemo(() => {
@@ -1067,11 +524,6 @@ export function Dashboard() {
 
     return normalized.records.length > 0 ? normalized : null
   }, [csvRawRows, normalizeMatrix])
-
-  // Convert CSV data to JSON format (fallback to raw data if normalization fails)
-  const csvJsonData = useMemo(() => {
-    return normalizedCsvData || (csvData?.data || null)
-  }, [normalizedCsvData, csvData])
 
   const handleCSVUpload = async (file: File) => {
     setIsParsingCsv(true)

@@ -160,6 +160,9 @@ export class PlExcelParserService {
             throw new Error('Failed to read file')
           }
           const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            throw new Error('Excel file has no sheets')
+          }
           const sheetName = workbook.SheetNames[0]
           const sheet = workbook.Sheets[sheetName]
           
@@ -209,6 +212,9 @@ export class PlExcelParserService {
 
   static parseExcelBuffer(buffer: ArrayBuffer, fileName?: string, periodOverride?: string): PlReportData {
     const workbook = XLSX.read(buffer, { type: 'array' })
+    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+      throw new Error('Excel file has no sheets')
+    }
     const sheetName = workbook.SheetNames[0]
     const sheet = workbook.Sheets[sheetName]
     
