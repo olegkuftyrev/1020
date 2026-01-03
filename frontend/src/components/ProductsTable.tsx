@@ -328,7 +328,7 @@ function CategoryTable({
   )
 }
 
-export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTableProps) {
+export function ProductsTable({ data, onDataChange }: ProductsTableProps) {
   const [periodMultiplier, setPeriodMultiplier] = React.useState<string>("12")
   const [isLoadingMultiplier, setIsLoadingMultiplier] = React.useState(true)
   const [isSavingMultiplier, setIsSavingMultiplier] = React.useState(false)
