@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import useSWR from 'swr'
 import { Link } from 'react-router-dom'
 import { getCategorySummary, type CategorySummary } from '@/utils/productsApi'
@@ -6,7 +6,14 @@ import { plPeriodsFetcher, plReportFetcher } from '@/utils/plApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowUp, ArrowDown, CalendarDays } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { parseCSVFile, type ParsedCSVData } from '@/utils/csvParser'
 import Papa from 'papaparse'
 import { getGemData, saveGemData, type GemData } from '@/utils/gemApi'
@@ -27,6 +34,13 @@ import {
 import {
   ChartContainer,
 } from "@/components/ui/chart"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 export function Dashboard() {
   const [csvData, setCsvData] = useState<ParsedCSVData | null>(null)
@@ -49,7 +63,7 @@ export function Dashboard() {
     }
   )
 
-  const { data: _categorySummary, isLoading: categoryLoading } = useSWR<CategorySummary[]>(
+  const { data: _categorySummary } = useSWR<CategorySummary[]>(
     '/products/category-summary',
     getCategorySummary,
     {
@@ -111,22 +125,67 @@ export function Dashboard() {
     return sorted
   }, [periods2025.data, periods2026.data])
 
-  // Find the period with the latest updatedAt date
+  // Find the period closest to today's date (by period date, not upload date)
   const latestPeriodByDate = useMemo(() => {
     if (allPeriods.length === 0) return null
     
-    return allPeriods.reduce((latest, current) => {
-      const latestDate = new Date(latest.updatedAt).getTime()
-      const currentDate = new Date(current.updatedAt).getTime()
-      return currentDate > latestDate ? current : latest
-    })
+    const today = new Date()
+    const currentYear = today.getFullYear()
+    const currentMonth = today.getMonth() + 1 // 1-12
+    const currentPeriod = currentMonth // Assuming period = month (P1 = Jan, P2 = Feb, etc.)
+    
+    // First, try to find the exact current period in current year
+    const exactMatch = allPeriods.find(p => p.year === currentYear && p.period === currentPeriod)
+    if (exactMatch) {
+      return exactMatch
+    }
+    
+    // If not found, find the most recent period in current year that is < current period
+    const currentYearPeriods = allPeriods
+      .filter(p => p.year === currentYear && p.period < currentPeriod)
+      .sort((a, b) => b.period - a.period)
+    
+    if (currentYearPeriods.length > 0) {
+      return currentYearPeriods[0]
+    }
+    
+    // If no period in current year, find the latest period from previous years
+    // allPeriods is already sorted by year desc, then period desc, so return the first one
+    return allPeriods[0]
   }, [allPeriods])
-  
-  const periodsLoading = periods2025.isLoading || periods2026.isLoading
 
-  // Fetch the full report for the latest period (same as PL.tsx PeriodCard)
-  const { data: latestPeriodReport, isLoading: latestReportLoading } = useSWR(
-    latestPeriodByDate ? `/pl/${latestPeriodByDate.year}/${latestPeriodByDate.period}` : null,
+  // State for selected period
+  const [selectedPeriodKey, setSelectedPeriodKey] = useState<string | null>(null)
+
+  // Set default selected period to latest when available
+  useEffect(() => {
+    if (latestPeriodByDate && !selectedPeriodKey) {
+      const latestKey = `${latestPeriodByDate.year}-${latestPeriodByDate.period}`
+      setSelectedPeriodKey(latestKey)
+    }
+  }, [latestPeriodByDate, selectedPeriodKey])
+
+  // Compute the effective selected period key (defaults to latest if not set)
+  const effectiveSelectedPeriodKey = useMemo(() => {
+    if (selectedPeriodKey) {
+      return selectedPeriodKey
+    }
+    if (latestPeriodByDate) {
+      return `${latestPeriodByDate.year}-${latestPeriodByDate.period}`
+    }
+    return null
+  }, [selectedPeriodKey, latestPeriodByDate])
+
+  // Get the currently selected period object
+  const selectedPeriod = useMemo(() => {
+    if (!effectiveSelectedPeriodKey) return null
+    const [year, period] = effectiveSelectedPeriodKey.split('-').map(Number)
+    return allPeriods.find(p => p.year === year && p.period === period) || latestPeriodByDate
+  }, [effectiveSelectedPeriodKey, allPeriods, latestPeriodByDate])
+  
+  // Fetch the full report for the selected period
+  const { data: selectedPeriodReport, isLoading: selectedReportLoading } = useSWR(
+    selectedPeriod ? `/pl/${selectedPeriod.year}/${selectedPeriod.period}` : null,
     plReportFetcher,
     {
       revalidateOnFocus: false,
@@ -135,10 +194,10 @@ export function Dashboard() {
 
   // Calculate key metrics from plReport (same logic as PL.tsx PeriodCard)
   const calculateKeyMetrics = useMemo(() => {
-    if (!latestPeriodReport) return null
+    if (!selectedPeriodReport) return null
 
-    const summaryData = latestPeriodReport.summaryData || {}
-    const lineItems = Array.isArray(latestPeriodReport.lineItems) ? latestPeriodReport.lineItems : []
+    const summaryData = selectedPeriodReport.summaryData || {}
+    const lineItems = Array.isArray(selectedPeriodReport.lineItems) ? selectedPeriodReport.lineItems : []
     
     const metrics: any = {}
 
@@ -319,41 +378,111 @@ export function Dashboard() {
       }
     }
 
-    // Top Controllable
-    const excludedKeywords = [
+    // All Controllables
+    // Include specific controllables based on the defined list
+    const controllablesKeywords = [
+      'third party delivery fee',
+      'credit card fees',
+      'credit card fee',
+      'broadband',
+      'electricity',
+      'gas',
+      'telephone',
+      'waste disposal',
+      'water',
+      'computer software expense',
+      'computer software',
+      'office and computer supplies',
+      'office supplies',
+      'education and training other',
+      'education and training',
+      'recruitment',
+      'professional services',
+      'travel expenses',
+      'travel expense',
+      'bank fees',
+      'bank fee',
+      'dues and subscriptions',
+      'dues and subscription',
+      'moving and relocation expenses',
+      'moving and relocation',
+      'other expenses',
+      'other expense',
+      'postage and courier service',
+      'postage and courier',
+      'repairs',
+      'maintenance',
+      'restaurant expenses',
+      'restaurant expense',
+      'restaurant supplies',
+      'restaurant supply',
+      'advertising',
       'corporate advertising',
       'media',
       'local store marketing',
-      'advertising',
-      'credit card fees',
-      'third party delivery fee',
-      'restaurant expenses'
+      'grand opening',
+      'lease marketing'
+    ]
+    // Exclude summary/total lines
+    const excludedKeywords = [
+      'total controllables',
+      'profit before adv',
+      'profit before advertising'
     ]
     const controllablesItems = lineItems.filter((item: any) => {
       const accountName = (item.ledgerAccount || '').toLowerCase().trim()
-      return !excludedKeywords.some(keyword => accountName.includes(keyword)) &&
-             (item.actuals || 0) > 0
+      // Exclude items with numbers followed by colon (e.g., "7400:Repairs")
+      const hasNumberColon = /\d+:/i.test(item.ledgerAccount || '')
+      if (hasNumberColon) {
+        return false
+      }
+      const isControllable = controllablesKeywords.some(keyword => accountName.includes(keyword))
+      const isExcluded = excludedKeywords.some(keyword => accountName.includes(keyword))
+      return isControllable && !isExcluded && (item.actuals || 0) > 0
     })
     if (controllablesItems.length > 0) {
-      const topItem = controllablesItems.reduce((max: any, item: any) => {
-        return (item.actuals || 0) > (max.actuals || 0) ? item : max
+      // Remove duplicates by ledger account name (case-insensitive)
+      const seenAccounts = new Set<string>()
+      const uniqueControllables = controllablesItems.filter((item: any) => {
+        const accountName = (item.ledgerAccount || '').toLowerCase().trim()
+        if (seenAccounts.has(accountName)) {
+          return false
+        }
+        seenAccounts.add(accountName)
+        return true
       })
-      const topValue = topItem.actuals || 0
-      const topPrior = topItem.priorYear || 0
-      const difference = topValue - topPrior
-      metrics.topControllable = {
-        name: topItem.ledgerAccount || 'Unknown',
-        value: topValue,
-        priorYear: topPrior,
-        difference: difference,
-        isPositive: difference < 0 // Для расходов меньше = лучше
-      }
+      
+      // Map and prepare controllables
+      const controllables = uniqueControllables
+        .map((item: any) => {
+          const value = item.actuals || 0
+          const priorYear = item.priorYear || 0
+          const difference = value - priorYear
+          return {
+            name: item.ledgerAccount || 'Unknown',
+            value: value,
+            priorYear: priorYear,
+            difference: difference,
+            isPositive: difference < 0 // Для расходов меньше = лучше
+          }
+        })
+      
+      // Separate into positive differences (red - expenses increased) and negative differences (green - expenses decreased)
+      const positiveDifferences = controllables
+        .filter(c => c.difference > 0)
+        .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference)) // Sort by absolute difference descending
+      
+      const negativeDifferences = controllables
+        .filter(c => c.difference < 0)
+        .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference)) // Sort by absolute difference descending
+      
+      metrics.controllablesPositive = positiveDifferences
+      metrics.controllablesNegative = negativeDifferences
+      metrics.allControllables = controllables // Keep for backward compatibility if needed
     }
 
     return metrics
-  }, [latestPeriodReport])
-
-  const isLoading = periodsLoading || latestReportLoading || categoryLoading
+  }, [selectedPeriodReport])
 
   const handleCSVUpload = async (file: File) => {
     setIsParsingCsv(true)
@@ -779,42 +908,65 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Latest Period Card - Show only the latest period by date */}
-      {latestPeriodByDate && latestPeriodReport && (
+      {/* P&L Period Card with Period Selector */}
+      {allPeriods.length > 0 && (
         <div className="rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm p-6 md:p-8 shadow-lg">
           <div className="mb-6">
-            <h3 className="text-xl font-bold text-foreground mb-2">Latest P&L Period</h3>
+            <h3 className="text-xl font-bold text-foreground mb-2">P&L Period</h3>
             <div className="h-1 w-16 bg-primary/60 rounded-full"></div>
           </div>
           
           <div className="rounded-lg border border-primary/20 bg-card/60 p-4 mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h4 className="text-lg font-semibold text-foreground">
-                  {latestPeriodByDate.periodString} ({latestPeriodByDate.year})
-                </h4>
-                {latestPeriodReport.storeName && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {latestPeriodReport.storeName} • {latestPeriodReport.company}
-                  </p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <CalendarDays className="h-5 w-5 text-primary" />
+                <Select
+                  value={effectiveSelectedPeriodKey || ''}
+                  onValueChange={(value) => setSelectedPeriodKey(value)}
+                >
+                  <SelectTrigger className="w-full sm:w-[200px] border-primary/30 bg-card/80">
+                    <SelectValue placeholder="Select a period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allPeriods.map((period) => (
+                      <SelectItem 
+                        key={`${period.year}-${period.period}`} 
+                        value={`${period.year}-${period.period}`}
+                      >
+                        {period.periodString} ({period.year})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {selectedPeriodReport?.storeName && (
+                  <span className="font-medium text-foreground">
+                    {selectedPeriodReport.storeName}
+                  </span>
+                )}
+                {selectedPeriodReport?.company && (
+                  <span className="text-muted-foreground"> • {selectedPeriodReport.company}</span>
                 )}
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Updated: {new Date(latestPeriodByDate.updatedAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
+            {selectedPeriod && (
+              <p className="text-xs text-muted-foreground mt-3">
+                Updated: {new Date(selectedPeriod.updatedAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            )}
           </div>
 
-          {/* Key Metrics for Latest Period - Same display as PLPeriodDetail */}
-          {isLoading ? (
+          {/* Key Metrics for Selected Period - Same display as PLPeriodDetail */}
+          {selectedReportLoading ? (
             <div className="text-center py-8 text-muted-foreground">
-              Loading key metrics for {latestPeriodByDate.periodString} ({latestPeriodByDate.year})...
+              Loading key metrics for {selectedPeriod?.periodString} ({selectedPeriod?.year})...
             </div>
           ) : calculateKeyMetrics ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -1007,7 +1159,7 @@ export function Dashboard() {
 
               {/* Restaurant Contribution */}
               {calculateKeyMetrics.restaurantContribution && (() => {
-                const summaryData = latestPeriodReport?.summaryData || {}
+                const summaryData = selectedPeriodReport?.summaryData || {}
                 const hasPriorYear = summaryData.netSalesPriorYear && 
                                     summaryData.controllableProfitPriorYear !== undefined && 
                                     summaryData.fixedCostsPriorYear !== undefined
@@ -1092,31 +1244,93 @@ export function Dashboard() {
                 </div>
               )}
 
-              {/* Top Controllable */}
-              {calculateKeyMetrics.topControllable && (
-                <div className="rounded-lg border border-primary/20 bg-card/60 p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">Top Controllable</div>
-                  <div className="text-xs font-semibold text-foreground mb-2 truncate" title={calculateKeyMetrics.topControllable.name}>
-                    {calculateKeyMetrics.topControllable.name}
+              {/* Controllables - Positive Differences (Red - Expenses Increased) */}
+              {calculateKeyMetrics.controllablesPositive && calculateKeyMetrics.controllablesPositive.length > 0 && (
+                <div className="rounded-lg border border-primary/20 bg-card/60 p-4 md:col-span-2 lg:col-span-3">
+                  <div className="text-sm font-medium text-muted-foreground mb-3">
+                    Controllables - Increased ({calculateKeyMetrics.controllablesPositive.length})
                   </div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="text-2xl font-bold text-foreground">
-                      ${(calculateKeyMetrics.topControllable.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    {calculateKeyMetrics.topControllable.isPositive ? (
-                      <ArrowDown className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <ArrowUp className="h-5 w-5 text-red-500" />
-                    )}
-                    <div className={`text-sm font-semibold ${calculateKeyMetrics.topControllable.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                      {calculateKeyMetrics.topControllable.isPositive ? '' : '+'}${Math.abs(calculateKeyMetrics.topControllable.difference || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
+                  <Carousel
+                    opts={{
+                      align: "start",
+                    }}
+                    className="w-full"
+                  >
+                    <CarouselContent>
+                      {calculateKeyMetrics.controllablesPositive.map((controllable: any, index: number) => (
+                        <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                          <div className="p-1 h-full">
+                            <div className="rounded-lg border border-primary/20 bg-card/60 p-4 h-full flex flex-col">
+                              <div className="text-sm font-medium text-muted-foreground mb-1 truncate" title={controllable.name}>
+                                {controllable.name}
+                              </div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="text-2xl font-bold text-foreground">
+                                  ${(controllable.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                                <ArrowUp className="h-5 w-5 text-red-500 flex-shrink-0" />
+                                <div className="text-sm font-semibold text-red-500 whitespace-nowrap">
+                                  +${Math.abs(controllable.difference || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                              {controllable.priorYear !== undefined && controllable.priorYear > 0 && (
+                                <div className="text-xs text-muted-foreground mt-auto">
+                                  Prior Year: ${(controllable.priorYear || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
+                </div>
+              )}
+
+              {/* Controllables - Negative Differences (Green - Expenses Decreased) */}
+              {calculateKeyMetrics.controllablesNegative && calculateKeyMetrics.controllablesNegative.length > 0 && (
+                <div className="rounded-lg border border-primary/20 bg-card/60 p-4 md:col-span-2 lg:col-span-3">
+                  <div className="text-sm font-medium text-muted-foreground mb-3">
+                    Controllables - Decreased ({calculateKeyMetrics.controllablesNegative.length})
                   </div>
-                  {calculateKeyMetrics.topControllable.priorYear !== undefined && calculateKeyMetrics.topControllable.priorYear > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      Prior Year: ${(calculateKeyMetrics.topControllable.priorYear || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  )}
+                  <Carousel
+                    opts={{
+                      align: "start",
+                    }}
+                    className="w-full"
+                  >
+                    <CarouselContent>
+                      {calculateKeyMetrics.controllablesNegative.map((controllable: any, index: number) => (
+                        <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                          <div className="p-1 h-full">
+                            <div className="rounded-lg border border-primary/20 bg-card/60 p-4 h-full flex flex-col">
+                              <div className="text-sm font-medium text-muted-foreground mb-1 truncate" title={controllable.name}>
+                                {controllable.name}
+                              </div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="text-2xl font-bold text-foreground">
+                                  ${(controllable.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                                <ArrowDown className="h-5 w-5 text-green-500 flex-shrink-0" />
+                                <div className="text-sm font-semibold text-green-500 whitespace-nowrap">
+                                  ${Math.abs(controllable.difference || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                              {controllable.priorYear !== undefined && controllable.priorYear > 0 && (
+                                <div className="text-xs text-muted-foreground mt-auto">
+                                  Prior Year: ${(controllable.priorYear || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
                 </div>
               )}
             </div>
