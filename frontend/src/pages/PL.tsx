@@ -5,6 +5,13 @@ import { PlExcelParserService } from '@/utils/plExcelParser'
 import { savePlReport, plPeriodsFetcher, plReportFetcher } from '@/utils/plApi'
 import { Dropzone } from '@/components/ui/dropzone'
 import { ArrowUp, ArrowDown } from 'lucide-react'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel'
 
 interface PeriodData {
   period: number
@@ -770,7 +777,36 @@ function YearSection({
                 )}
                 <div className="h-px flex-1 bg-primary/20"></div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {/* Mobile Carousel */}
+              <div className="block md:hidden relative">
+                <Carousel
+                  opts={{
+                    align: "center",
+                  }}
+                  className="w-full"
+                >
+                  <CarouselContent className="-ml-4 pr-4">
+                    {quarter.periods.map(({ period, info }) => {
+                      const periodData = periodsMap.get(period)
+                      return (
+                        <CarouselItem key={period} className="pl-4 basis-[85%]">
+                          <PeriodCard
+                            year={year}
+                            period={period}
+                            periodData={periodData}
+                            periodInfo={info}
+                            onUpload={(file) => handleFileUpload(period, file)}
+                          />
+                        </CarouselItem>
+                      )
+                    })}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-2 h-6 w-6 shadow-lg" />
+                  <CarouselNext className="right-2 h-6 w-6 shadow-lg" />
+                </Carousel>
+              </div>
+              {/* Desktop Grid */}
+              <div className="hidden md:grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {quarter.periods.map(({ period, info }) => {
                   const periodData = periodsMap.get(period)
                   return (

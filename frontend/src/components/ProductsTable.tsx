@@ -602,47 +602,45 @@ export function ProductsTable({ data, onDataChange }: ProductsTableProps) {
       )}
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <label htmlFor="period-multiplier" className="text-sm text-muted-foreground whitespace-nowrap">
-              <span className="hidden sm:inline">Period Multiplier:</span>
-              <span className="sm:hidden">Multiplier:</span>
-            </label>
-            <div className="relative">
-              <Input
-                id="period-multiplier"
-                type="number"
-                min="1"
-                max="30000"
-                step="1"
-                value={multiplierInputValue}
-                onChange={(e) => handleMultiplierChange(e.target.value)}
-                onBlur={handleMultiplierSave}
-                onKeyDown={handleMultiplierKeyDown}
-                disabled={isLoadingMultiplier || isSavingMultiplier}
-                className="w-[100px] sm:w-[120px] iron-border"
-                placeholder="12"
-              />
-              {(isLoadingMultiplier || isSavingMultiplier) && (
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  {isLoadingMultiplier ? '...' : 'Saving...'}
-                </span>
-              )}
-            </div>
-            <span className="text-sm text-muted-foreground">K</span>
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <label htmlFor="period-multiplier" className="text-sm text-muted-foreground whitespace-nowrap">
+            <span className="hidden sm:inline">Period Multiplier:</span>
+            <span className="sm:hidden">Multiplier:</span>
+          </label>
+          <div className="relative">
+            <Input
+              id="period-multiplier"
+              type="number"
+              min="1"
+              max="30000"
+              step="1"
+              value={multiplierInputValue}
+              onChange={(e) => handleMultiplierChange(e.target.value)}
+              onBlur={handleMultiplierSave}
+              onKeyDown={handleMultiplierKeyDown}
+              disabled={isLoadingMultiplier || isSavingMultiplier}
+              className="w-[100px] sm:w-[120px] iron-border"
+              placeholder="12"
+            />
+            {(isLoadingMultiplier || isSavingMultiplier) && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                {isLoadingMultiplier ? '...' : 'Saving...'}
+              </span>
+            )}
           </div>
+          <span className="text-sm text-muted-foreground">K</span>
         </div>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
-              size="sm"
-              className="iron-border hover:iron-glow"
+              size="icon"
+              className="iron-border hover:iron-glow h-8 w-8"
             >
-              <Settings2 className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Columns</span>
+              <Settings2 className="h-4 w-4" />
+              <span className="sr-only">Columns</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-card border-primary/20">
