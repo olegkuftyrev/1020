@@ -6,8 +6,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { 
-  getPlQuestions, 
-  getQuestionSets, 
   createQuestionSet, 
   deleteQuestionSet,
   type PlQuestion,

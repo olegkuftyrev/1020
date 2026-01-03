@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import useSWR from 'swr'
 import { Link } from 'react-router-dom'
 import { getCategorySummary, type CategorySummary } from '@/utils/productsApi'
@@ -20,16 +20,12 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import {
   ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
 } from "@/components/ui/chart"
 
 export function Dashboard() {
@@ -53,7 +49,7 @@ export function Dashboard() {
     }
   )
 
-  const { data: categorySummary, isLoading: categoryLoading } = useSWR<CategorySummary[]>(
+  const { data: _categorySummary, isLoading: categoryLoading } = useSWR<CategorySummary[]>(
     '/products/category-summary',
     getCategorySummary,
     {
@@ -496,7 +492,7 @@ export function Dashboard() {
   }, [])
 
   // Normalize CSV data to structured format using matrix normalization
-  const normalizedCsvData = useMemo(() => {
+  const _normalizedCsvData = useMemo(() => {
     if (!csvRawRows || csvRawRows.length === 0) {
       return null
     }

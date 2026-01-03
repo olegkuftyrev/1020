@@ -52,7 +52,7 @@ function normalizeHeader(header: string): string {
 /**
  * Normalize CSV data - clean values, handle empty strings
  */
-function normalizeData(data: Record<string, string>[], headers: string[]): Record<string, string>[] {
+function _normalizeData(data: Record<string, string>[], headers: string[]): Record<string, string>[] {
   return data.map(row => {
     const normalizedRow: Record<string, string> = {}
     headers.forEach(header => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import useSWR from 'swr'
 import { Button } from '@/components/ui/button'
@@ -7,12 +7,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { 
-  getQuestionSet, 
   submitAnswers,
   type QuestionSet,
-  type PlQuestion 
 } from '@/utils/plQuestionsApi'
-import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 const setFetcher = async (url: string) => {
   const response = await fetch(url)
