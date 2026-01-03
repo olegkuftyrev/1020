@@ -9,10 +9,12 @@ interface AuthState {
   verify: () => Promise<void>
 }
 
+import { API_BASE_URL } from '@/config/api'
+
 // Create axios instance with base config
-// In production, use relative path (nginx will proxy)
+// In production, use relative path (nginx will proxy) or set VITE_API_URL env var
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

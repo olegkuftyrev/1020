@@ -1,9 +1,10 @@
 import axios from 'axios'
 import { ProductData } from './pdfParser'
+import { API_BASE_URL } from '@/config/api'
 
 // Create axios instance with base config
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

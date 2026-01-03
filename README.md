@@ -70,6 +70,22 @@ Frontend runs on `http://localhost:3000`
 
 Simple password-based authentication. The backend verifies the password against the `AUTH_PASSWORD` environment variable.
 
+## Deployment
+
+### DigitalOcean App Platform
+
+Проект подготовлен для деплоя на DigitalOcean App Platform. См. [DIGITALOCEAN_DEPLOY.md](./DIGITALOCEAN_DEPLOY.md) для подробных инструкций.
+
+Кратко:
+1. Обновите `.do/app.yaml` с вашим GitHub репозиторием
+2. Создайте приложение в DigitalOcean App Platform
+3. Настройте необходимые secrets (AUTH_PASSWORD, APP_KEY, WEBHOOK_SECRET)
+4. Деплой произойдет автоматически при push в main ветку
+
+### Netlify (Frontend only)
+
+Для деплоя только frontend на Netlify см. [NETLIFY.md](./NETLIFY.md)
+
 ## Tech Stack
 
 - **Backend**: AdonisJS 6, TypeScript, PostgreSQL, Prisma

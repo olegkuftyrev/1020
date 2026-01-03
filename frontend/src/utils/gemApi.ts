@@ -1,5 +1,4 @@
-// Use relative URL - nginx will proxy /api to backend
-const API_BASE_URL = ''
+import { API_BASE_URL } from '@/config/api'
 
 export interface GemData {
   id: string
@@ -15,7 +14,7 @@ export async function getGemData(): Promise<GemData | null> {
   try {
     const token = localStorage.getItem('auth_token')
     
-    const response = await fetch(`${API_BASE_URL}/api/gem`, {
+    const response = await fetch(`${API_BASE_URL}/gem`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -53,7 +52,7 @@ export async function saveGemData(data: {
   const token = localStorage.getItem('auth_token')
   
   // Construct the full URL for logging
-  const url = `${API_BASE_URL}/api/gem`
+  const url = `${API_BASE_URL}/gem`
   const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`
   
   console.log('saveGemData: API_BASE_URL:', API_BASE_URL)
