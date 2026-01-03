@@ -4,7 +4,7 @@ region: fra
 # Backend Web Service
 services:
   - name: backend
-    source_dir: /backend
+    source_dir: backend
     github:
       repo: YOUR_GITHUB_USERNAME/YOUR_REPO_NAME
       branch: main
@@ -53,7 +53,7 @@ services:
 # Frontend Static Site
 static_sites:
   - name: frontend
-    source_dir: /frontend
+    source_dir: frontend
     github:
       repo: YOUR_GITHUB_USERNAME/YOUR_REPO_NAME
       branch: main
