@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import useSWR from 'swr'
 import { plReportFetcher, deletePlReport } from '@/utils/plApi'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -29,6 +31,9 @@ export function PLPeriodDetail() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showCalculations] = useState(false) // Hidden by default
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   
   // Table visibility filters
   const [tableVisibility, setTableVisibility] = useState({
@@ -640,6 +645,12 @@ export function PLPeriodDetail() {
     }
   )
 
+  const handleDeleteClick = () => {
+    setShowPasswordDialog(true)
+    setPassword('')
+    setPasswordError(null)
+  }
+
   const handleDelete = async () => {
     if (!confirm(`Are you sure you want to delete P&L data for ${year} Period ${period}?`)) {
       return
@@ -654,6 +665,25 @@ export function PLPeriodDetail() {
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password === '1337') {
+      setShowPasswordDialog(false)
+      setPassword('')
+      setPasswordError(null)
+      handleDelete()
+    } else {
+      setPasswordError('Incorrect password')
+      setPassword('')
+    }
+  }
+
+  const handlePasswordCancel = () => {
+    setShowPasswordDialog(false)
+    setPassword('')
+    setPasswordError(null)
   }
 
   if (isLoading) {
@@ -724,7 +754,7 @@ export function PLPeriodDetail() {
               Filters
             </Button>
             <Button
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               variant="destructive"
               disabled={isDeleting}
               className="iron-border"
@@ -740,6 +770,52 @@ export function PLPeriodDetail() {
             </Button>
           </div>
         </div>
+        
+        {/* Password Dialog */}
+        {showPasswordDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="rounded-lg border border-primary/20 bg-card/95 backdrop-blur-sm p-6 shadow-lg w-full max-w-md mx-4">
+              <h4 className="text-lg font-semibold mb-4 text-foreground">Enter Password</h4>
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="delete-password" className="mb-2">Password</Label>
+                  <Input
+                    id="delete-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setPasswordError(null)
+                    }}
+                    placeholder="Enter password"
+                    autoFocus
+                    className="iron-border"
+                  />
+                  {passwordError && (
+                    <p className="text-sm text-red-400 mt-2">{passwordError}</p>
+                  )}
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handlePasswordCancel}
+                    className="iron-border"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="destructive"
+                    className="iron-border"
+                  >
+                    Submit
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Filters Panel */}
         {showFilters && (

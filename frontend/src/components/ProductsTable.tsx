@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { ProductData } from "@/utils/pdfParser"
 import { updateProductConversion, getSetting, setSetting } from "@/utils/productsApi"
 import { cn } from "@/lib/utils"
@@ -335,6 +336,9 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
   const [isSavingMultiplier, setIsSavingMultiplier] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState<string>("")
   const [selectedCategoryFilter, setSelectedCategoryFilter] = React.useState<string>("all")
+  const [showPasswordDialog, setShowPasswordDialog] = React.useState(false)
+  const [password, setPassword] = React.useState('')
+  const [passwordError, setPasswordError] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
@@ -608,8 +612,9 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
           <>
             <Button
               onClick={() => {
-                console.log('Replace button clicked, fileInputRef:', fileInputRef.current)
-                fileInputRef.current?.click()
+                setShowPasswordDialog(true)
+                setPassword('')
+                setPasswordError(null)
               }}
               variant="outline"
               size="sm"
@@ -637,6 +642,68 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
             />
           </>
         )}
+        
+        {/* Password Dialog */}
+        {showPasswordDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="rounded-lg border border-primary/20 bg-card/95 backdrop-blur-sm p-6 shadow-lg w-full max-w-md mx-4">
+              <h4 className="text-lg font-semibold mb-4 text-foreground">Enter Password</h4>
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                if (password === '1337') {
+                  setShowPasswordDialog(false)
+                  setPassword('')
+                  setPasswordError(null)
+                  fileInputRef.current?.click()
+                } else {
+                  setPasswordError('Incorrect password')
+                  setPassword('')
+                }
+              }} className="space-y-4">
+                <div>
+                  <Label htmlFor="replace-password" className="mb-2">Password</Label>
+                  <Input
+                    id="replace-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setPasswordError(null)
+                    }}
+                    placeholder="Enter password"
+                    autoFocus
+                    className="iron-border"
+                  />
+                  {passwordError && (
+                    <p className="text-sm text-red-400 mt-2">{passwordError}</p>
+                  )}
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowPasswordDialog(false)
+                      setPassword('')
+                      setPasswordError(null)
+                    }}
+                    className="iron-border"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="default"
+                    className="iron-border"
+                  >
+                    Submit
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center gap-3 ml-auto">
           <label htmlFor="period-multiplier" className="text-sm text-muted-foreground whitespace-nowrap">
             Period Multiplier:

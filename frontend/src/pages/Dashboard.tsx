@@ -4,12 +4,14 @@ import { Link } from 'react-router-dom'
 import { getCategorySummary, type CategorySummary } from '@/utils/productsApi'
 import { plPeriodsFetcher, plReportFetcher } from '@/utils/plApi'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ArrowUp, ArrowDown } from 'lucide-react'
 import { parseCSVFile, type ParsedCSVData } from '@/utils/csvParser'
 import Papa from 'papaparse'
 import { getGemData, saveGemData, type GemData } from '@/utils/gemApi'
 import {
-  Label,
+  Label as LabelChart,
   PolarGrid,
   PolarRadiusAxis,
   RadialBar,
@@ -36,6 +38,9 @@ export function Dashboard() {
   const [isParsingCsv, setIsParsingCsv] = useState(false)
   const [csvError, setCsvError] = useState<string | null>(null)
   const [csvFileName, setCsvFileName] = useState<string | null>(null)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load gem data from database
@@ -586,7 +591,28 @@ export function Dashboard() {
   }
 
   const handleFileButtonClick = () => {
-    fileInputRef.current?.click()
+    setShowPasswordDialog(true)
+    setPassword('')
+    setPasswordError(null)
+  }
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password === '1337') {
+      setShowPasswordDialog(false)
+      setPassword('')
+      setPasswordError(null)
+      fileInputRef.current?.click()
+    } else {
+      setPasswordError('Incorrect password')
+      setPassword('')
+    }
+  }
+
+  const handlePasswordCancel = () => {
+    setShowPasswordDialog(false)
+    setPassword('')
+    setPasswordError(null)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -622,6 +648,52 @@ export function Dashboard() {
               className="hidden"
             />
           </div>
+          
+          {/* Password Dialog */}
+          {showPasswordDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <div className="rounded-lg border border-primary/20 bg-card/95 backdrop-blur-sm p-6 shadow-lg w-full max-w-md mx-4">
+                <h4 className="text-lg font-semibold mb-4 text-foreground">Enter Password</h4>
+                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="password" className="mb-2">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        setPasswordError(null)
+                      }}
+                      placeholder="Enter password"
+                      autoFocus
+                      className="iron-border"
+                    />
+                    {passwordError && (
+                      <p className="text-sm text-red-400 mt-2">{passwordError}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handlePasswordCancel}
+                      className="iron-border"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="default"
+                      className="iron-border"
+                    >
+                      Submit
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
           <div className="h-1 w-16 bg-primary/60 rounded-full"></div>
           <p className="text-sm text-muted-foreground mt-2">
             Displaying extracted values from CSV data
@@ -732,8 +804,8 @@ export function Dashboard() {
                             max={totalCount}
                           />
                           <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-                            <Label
-                              content={({ viewBox }) => {
+                            <LabelChart
+                              content={({ viewBox }: any) => {
                                 if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                                   return (
                                     <text
@@ -822,8 +894,8 @@ export function Dashboard() {
                             max={totalCount}
                           />
                           <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-                            <Label
-                              content={({ viewBox }) => {
+                            <LabelChart
+                              content={({ viewBox }: any) => {
                                 if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                                   return (
                                     <text
