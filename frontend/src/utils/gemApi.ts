@@ -1,4 +1,5 @@
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3333'
+// Use relative URL - nginx will proxy /api to backend
+const API_BASE_URL = ''
 
 export interface GemData {
   id: string
@@ -51,7 +52,7 @@ export async function saveGemData(data: {
 }): Promise<GemData> {
   const token = localStorage.getItem('auth_token')
   
-  console.log('saveGemData: Sending request to', `${API_BASE_URL}/api/gem`)
+  console.log('saveGemData: Sending request to /api/gem')
   console.log('saveGemData: Data to save:', data)
   console.log('saveGemData: rawJson type:', typeof data.rawJson, 'isArray:', Array.isArray(data.rawJson))
   
