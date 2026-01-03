@@ -4,7 +4,8 @@ import useSWR from 'swr'
 import { PlExcelParserService } from '@/utils/plExcelParser'
 import { savePlReport, plPeriodsFetcher, plReportFetcher } from '@/utils/plApi'
 import { Dropzone } from '@/components/ui/dropzone'
-import { ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile'
 import {
   Carousel,
   CarouselContent,
@@ -663,6 +664,8 @@ function YearSection({
   year: number
 }) {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
+  const [openQuarter, setOpenQuarter] = useState<string | null>(null)
 
   // Determine which periods to show
   const currentDate = new Date()
@@ -765,9 +768,19 @@ function YearSection({
 
           const periodNumbers = quarter.periods.map(p => p.period).filter(p => periodsMap.has(p))
 
+          const isOpen = openQuarter === quarter.name
+          const handleQuarterClick = () => {
+            if (isMobile) {
+              setOpenQuarter(isOpen ? null : quarter.name)
+            }
+          }
+
           return (
             <div key={quarter.name} className="flex flex-col gap-4">
-              <div className="flex items-center gap-3">
+              <div 
+                className={`flex items-center gap-3 ${isMobile ? 'cursor-pointer' : ''}`}
+                onClick={handleQuarterClick}
+              >
                 <h3 className="text-lg font-semibold text-foreground">{quarter.name}</h3>
                 {periodNumbers.length > 0 && (
                   <QuarterHeader 
@@ -776,9 +789,16 @@ function YearSection({
                   />
                 )}
                 <div className="h-px flex-1 bg-primary/20"></div>
+                {isMobile && (
+                  isOpen ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )
+                )}
               </div>
               {/* Mobile Carousel */}
-              <div className="block md:hidden relative">
+              <div className={`block md:hidden relative overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                 <Carousel
                   opts={{
                     align: "center",
