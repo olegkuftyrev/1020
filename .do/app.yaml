@@ -17,13 +17,9 @@ services:
     instance_count: 1
     instance_size_slug: basic-xxs
     
-    http_port: 3333
-    
     envs:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: "3333"
       - key: HOST
         value: "0.0.0.0"
       - key: DATABASE_URL
