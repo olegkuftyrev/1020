@@ -5,7 +5,7 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   login: (password: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   verify: () => Promise<void>
 }
 
@@ -16,11 +16,12 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Include cookies in requests
 })
 
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start with loading true to prevent flash of content
 
   login: async (password: string) => {
     set({ isLoading: true, isAuthenticated: false })
@@ -30,8 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       
       if (response.data.authenticated) {
         set({ isAuthenticated: true, isLoading: false })
-        // Store auth token/session if needed in the future
-        localStorage.setItem('isAuthenticated', 'true')
+        // Don't store in localStorage - it can be manipulated
       } else {
         set({ isLoading: false, isAuthenticated: false })
         throw new Error(response.data.error || 'Invalid password. Access denied.')
@@ -57,26 +57,33 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: () => {
-    set({ isAuthenticated: false })
-    localStorage.removeItem('isAuthenticated')
+  logout: async () => {
+    try {
+      // Call backend to clear session
+      await api.post('/auth/logout')
+    } catch (error) {
+      // Even if logout fails, clear local state
+      console.error('Logout error:', error)
+    } finally {
+      set({ isAuthenticated: false, isLoading: false })
+    }
   },
 
   verify: async () => {
+    set({ isLoading: true })
     try {
       const response = await api.get('/auth/verify')
       
-      if (response.data.authenticated) {
-        set({ isAuthenticated: true })
-        localStorage.setItem('isAuthenticated', 'true')
+      // Only trust the server response - never rely on localStorage
+      if (response.data.authenticated === true) {
+        set({ isAuthenticated: true, isLoading: false })
       } else {
-        set({ isAuthenticated: false })
-        localStorage.removeItem('isAuthenticated')
+        set({ isAuthenticated: false, isLoading: false })
       }
     } catch (error: any) {
-      // Silently fail on verify - user just needs to login
-      set({ isAuthenticated: false })
-      localStorage.removeItem('isAuthenticated')
+      // If verify fails, user is not authenticated
+      // This is critical for security - fail closed
+      set({ isAuthenticated: false, isLoading: false })
       console.error('Verify failed:', error.response?.status, error.message)
     }
   },

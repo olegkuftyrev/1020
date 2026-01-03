@@ -607,41 +607,72 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
       )}
 
       {/* Controls */}
-      <div className="flex items-center justify-between gap-3">
-        {onReplaceFile && (
-          <>
-            <Button
-              onClick={() => {
-                setShowPasswordDialog(true)
-                setPassword('')
-                setPasswordError(null)
-              }}
-              variant="outline"
-              size="sm"
-              className="iron-border hover:iron-glow"
-            >
-              Replace
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,application/pdf"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                console.log('File selected:', file?.name)
-                if (file && onReplaceFile) {
-                  console.log('Calling onReplaceFile with:', file.name)
-                  onReplaceFile(file)
-                }
-                // Reset input so the same file can be selected again
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = ''
-                }
-              }}
-              className="hidden"
-            />
-          </>
-        )}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {onReplaceFile && (
+            <>
+              <Button
+                onClick={() => {
+                  setShowPasswordDialog(true)
+                  setPassword('')
+                  setPasswordError(null)
+                }}
+                variant="outline"
+                size="sm"
+                className="iron-border hover:iron-glow"
+              >
+                Replace
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  console.log('File selected:', file?.name)
+                  if (file && onReplaceFile) {
+                    console.log('Calling onReplaceFile with:', file.name)
+                    onReplaceFile(file)
+                  }
+                  // Reset input so the same file can be selected again
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = ''
+                  }
+                }}
+                className="hidden"
+              />
+            </>
+          )}
+          
+          <div className="flex items-center gap-2">
+            <label htmlFor="period-multiplier" className="text-sm text-muted-foreground whitespace-nowrap">
+              <span className="hidden sm:inline">Period Multiplier:</span>
+              <span className="sm:hidden">Multiplier:</span>
+            </label>
+            <div className="relative">
+              <Input
+                id="period-multiplier"
+                type="number"
+                min="1"
+                max="30000"
+                step="1"
+                value={multiplierInputValue}
+                onChange={(e) => handleMultiplierChange(e.target.value)}
+                onBlur={handleMultiplierSave}
+                onKeyDown={handleMultiplierKeyDown}
+                disabled={isLoadingMultiplier || isSavingMultiplier}
+                className="w-[100px] sm:w-[120px] iron-border"
+                placeholder="12"
+              />
+              {(isLoadingMultiplier || isSavingMultiplier) && (
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {isLoadingMultiplier ? '...' : 'Saving...'}
+                </span>
+              )}
+            </div>
+            <span className="text-sm text-muted-foreground">K</span>
+          </div>
+        </div>
         
         {/* Password Dialog */}
         {showPasswordDialog && (
@@ -704,33 +735,6 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
           </div>
         )}
         
-        <div className="flex items-center gap-3 ml-auto">
-          <label htmlFor="period-multiplier" className="text-sm text-muted-foreground whitespace-nowrap">
-            Period Multiplier:
-          </label>
-          <div className="relative">
-            <Input
-              id="period-multiplier"
-              type="number"
-              min="1"
-              max="30000"
-              step="1"
-              value={multiplierInputValue}
-              onChange={(e) => handleMultiplierChange(e.target.value)}
-              onBlur={handleMultiplierSave}
-              onKeyDown={handleMultiplierKeyDown}
-              disabled={isLoadingMultiplier || isSavingMultiplier}
-              className="w-[120px] iron-border"
-              placeholder="12"
-            />
-            {(isLoadingMultiplier || isSavingMultiplier) && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                {isLoadingMultiplier ? '...' : 'Saving...'}
-              </span>
-            )}
-          </div>
-          <span className="text-sm text-muted-foreground">K</span>
-        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -739,7 +743,7 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
               className="iron-border hover:iron-glow"
             >
               <Settings2 className="mr-2 h-4 w-4" />
-              Columns
+              <span className="hidden sm:inline">Columns</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-card border-primary/20">

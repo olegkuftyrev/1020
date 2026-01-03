@@ -727,7 +727,7 @@ export function PLPeriodDetail() {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm p-6 md:p-8 shadow-lg">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
             <Button
               onClick={() => navigate('/pl')}
@@ -743,7 +743,7 @@ export function PLPeriodDetail() {
             </h1>
             <div className="h-1 w-24 bg-primary/60 rounded-full iron-glow"></div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => setShowFilters(!showFilters)}
               variant="outline"
@@ -751,7 +751,7 @@ export function PLPeriodDetail() {
               className="iron-border"
             >
               <Filter className="h-4 w-4 mr-2" />
-              Filters
+              <span className="hidden sm:inline">Filters</span>
             </Button>
             <Button
               onClick={handleDeleteClick}
@@ -760,11 +760,14 @@ export function PLPeriodDetail() {
               className="iron-border"
             >
               {isDeleting ? (
-                'Deleting...'
+                <>
+                  <span className="animate-pulse">●</span>
+                  <span className="hidden sm:inline">Deleting...</span>
+                </>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Data
+                  <Trash2 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Delete Data</span>
                 </>
               )}
             </Button>

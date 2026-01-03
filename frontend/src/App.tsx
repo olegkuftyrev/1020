@@ -13,11 +13,23 @@ import { PLQuestionTest } from './pages/PLQuestionTest'
 import { EasyLearning } from './pages/EasyLearning'
 
 function App() {
-  const { isAuthenticated, verify } = useAuthStore()
+  const { isAuthenticated, isLoading, verify } = useAuthStore()
 
   useEffect(() => {
     verify()
   }, [verify])
+
+  // Don't render anything until verification is complete
+  // This prevents bypassing authentication during the verify() call
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center">
+          <div className="animate-pulse text-primary text-lg">Verifying authentication...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <BrowserRouter>
