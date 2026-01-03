@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom"
 import { SiteHeader } from "./SiteHeader"
+import { Toaster } from "@/components/ui/sonner"
 
 export function Layout() {
   return (
@@ -8,6 +9,7 @@ export function Layout() {
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <Outlet />
       </main>
+      <Toaster />
     </div>
   )
 }

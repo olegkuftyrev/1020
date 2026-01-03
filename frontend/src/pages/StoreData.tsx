@@ -1,16 +1,23 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import useSWR from 'swr'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { parsePDF, parseProductRows, ProductData, applyConversionData } from '@/utils/pdfParser'
 import { ProductsTable } from '@/components/ProductsTable'
 import { productsFetcher, pdfMetadataFetcher, syncProducts } from '@/utils/productsApi'
 import { Dropzone } from '@/components/ui/dropzone'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export function StoreData() {
   const [isParsing, setIsParsing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [forceShowDropzone, setForceShowDropzone] = useState(false)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const replaceFileInputRef = useRef<HTMLInputElement>(null)
 
   // Load products from database using SWR
   const { data: products = [], mutate: mutateProducts, isLoading: isLoadingProducts, error: productsError } = useSWR<ProductData[]>(
@@ -43,12 +50,18 @@ export function StoreData() {
   const handleFileSelect = async (file: File) => {
     // Check if it's a PDF
     if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+      toast.error('Please upload a PDF file')
       setError('Please upload a PDF file')
       return
     }
 
     // Reset force show dropzone
     setForceShowDropzone(false)
+
+    // Show loading toast
+    const toastId = toast.loading('Загрузка файла...', {
+      description: `Обработка ${file.name}`,
+    })
 
     try {
       setIsParsing(true)
@@ -61,6 +74,11 @@ export function StoreData() {
       
       fileReader.onload = async (e) => {
         try {
+          toast.loading('Чтение файла...', {
+            id: toastId,
+            description: `Парсинг PDF файла`,
+          })
+
           const arrayBuffer = e.target?.result as ArrayBuffer
           if (!arrayBuffer) {
             throw new Error('Failed to read file')
@@ -70,6 +88,11 @@ export function StoreData() {
           const data = await parsePDF(arrayBuffer)
           console.log('PDF parsed, pages:', data.pageCount, 'rows:', data.rows.length)
 
+          toast.loading('Парсинг данных...', {
+            id: toastId,
+            description: `Найдено ${data.rows.length} строк`,
+          })
+
           // Parse products from rows
           const parsedProducts = parseProductRows(data.rows)
           console.log('Products parsed:', parsedProducts.length)
@@ -77,6 +100,11 @@ export function StoreData() {
           // Apply conversion data
           const productsWithConversion = applyConversionData(parsedProducts)
           console.log('Conversion data applied, total products:', productsWithConversion.length)
+
+          toast.loading('Сохранение в базу данных...', {
+            id: toastId,
+            description: `Обработано ${productsWithConversion.length} продуктов`,
+          })
 
           // Save to database
           console.log('Saving to database...')
@@ -94,6 +122,12 @@ export function StoreData() {
           await mutatePdfMetadata()
           setForceShowDropzone(false) // Reset after successful upload
           console.log('SWR cache revalidated')
+
+          // Show success toast
+          toast.success('Файл успешно обновлен', {
+            id: toastId,
+            description: `Загружено ${productsWithConversion.length} продуктов из ${file.name}`,
+          })
         } catch (err: any) {
           const errorMessage = err.message || err.response?.data?.error || 'Failed to parse PDF'
           setError(errorMessage)
@@ -103,14 +137,23 @@ export function StoreData() {
             response: err.response?.data,
             status: err.response?.status,
           })
+          toast.error('Ошибка при обработке файла', {
+            id: toastId,
+            description: errorMessage,
+          })
         } finally {
           setIsParsing(false)
         }
       }
 
       fileReader.onerror = () => {
-        setError('Failed to read file')
+        const errorMsg = 'Failed to read file'
+        setError(errorMsg)
         setIsParsing(false)
+        toast.error('Ошибка чтения файла', {
+          id: toastId,
+          description: 'Не удалось прочитать файл',
+        })
       }
 
       // Read file as ArrayBuffer
@@ -120,6 +163,10 @@ export function StoreData() {
       setError(errorMessage)
       console.error('File upload error:', err)
       setIsParsing(false)
+      toast.error('Ошибка при загрузке файла', {
+        id: toastId,
+        description: errorMessage,
+      })
     }
   }
 
@@ -234,14 +281,103 @@ export function StoreData() {
         )}
       </div>
       
-      {/* Button to Reports page */}
-      <div className="flex justify-center mt-6">
+      {/* Buttons at bottom */}
+      <div className="flex justify-center items-center gap-3 mt-6">
+        <Button
+          onClick={() => {
+            setShowPasswordDialog(true)
+            setPassword('')
+            setPasswordError(null)
+          }}
+          variant="outline"
+          size="lg"
+          className="iron-border"
+        >
+          Replace
+        </Button>
+        <input
+          ref={replaceFileInputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) {
+              handleFileSelect(file)
+            }
+            // Reset input so the same file can be selected again
+            if (replaceFileInputRef.current) {
+              replaceFileInputRef.current.value = ''
+            }
+          }}
+          className="hidden"
+        />
         <Link to="/reports">
           <Button variant="outline" size="lg" className="iron-border">
             View Reports
           </Button>
         </Link>
       </div>
+
+      {/* Password Dialog for Replace */}
+      {showPasswordDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="rounded-lg border border-primary/20 bg-card/95 backdrop-blur-sm p-6 shadow-lg w-full max-w-md mx-4">
+            <h4 className="text-lg font-semibold mb-4 text-foreground">Enter Password</h4>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              if (password === '1337') {
+                setShowPasswordDialog(false)
+                setPassword('')
+                setPasswordError(null)
+                replaceFileInputRef.current?.click()
+              } else {
+                setPasswordError('Incorrect password')
+                setPassword('')
+              }
+            }} className="space-y-4">
+              <div>
+                <Label htmlFor="replace-password" className="mb-2">Password</Label>
+                <Input
+                  id="replace-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    setPasswordError(null)
+                  }}
+                  placeholder="Enter password"
+                  autoFocus
+                  className="iron-border"
+                />
+                {passwordError && (
+                  <p className="text-sm text-red-400 mt-2">{passwordError}</p>
+                )}
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowPasswordDialog(false)
+                    setPassword('')
+                    setPasswordError(null)
+                  }}
+                  className="iron-border"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="default"
+                  className="iron-border"
+                >
+                  Submit
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

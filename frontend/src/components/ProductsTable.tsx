@@ -37,7 +37,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { ProductData } from "@/utils/pdfParser"
 import { updateProductConversion, getSetting, setSetting } from "@/utils/productsApi"
 import { cn } from "@/lib/utils"
@@ -71,7 +70,6 @@ const createColumns = (onConversionChange?: (productNumber: string, conversion: 
     cell: ({ row }) => (
       <div className="font-mono text-primary">{row.getValue("productNumber")}</div>
     ),
-    enableHiding: false,
   },
   {
     accessorKey: "productName",
@@ -336,12 +334,9 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
   const [isSavingMultiplier, setIsSavingMultiplier] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState<string>("")
   const [selectedCategoryFilter, setSelectedCategoryFilter] = React.useState<string>("all")
-  const [showPasswordDialog, setShowPasswordDialog] = React.useState(false)
-  const [password, setPassword] = React.useState('')
-  const [passwordError, setPasswordError] = React.useState<string | null>(null)
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
   
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+    productNumber: false,
     conversion: false,
     unit: false,
     w38: false,
@@ -609,41 +604,6 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
       {/* Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3 flex-wrap">
-          {onReplaceFile && (
-            <>
-              <Button
-                onClick={() => {
-                  setShowPasswordDialog(true)
-                  setPassword('')
-                  setPasswordError(null)
-                }}
-                variant="outline"
-                size="sm"
-                className="iron-border hover:iron-glow"
-              >
-                Replace
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,application/pdf"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  console.log('File selected:', file?.name)
-                  if (file && onReplaceFile) {
-                    console.log('Calling onReplaceFile with:', file.name)
-                    onReplaceFile(file)
-                  }
-                  // Reset input so the same file can be selected again
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = ''
-                  }
-                }}
-                className="hidden"
-              />
-            </>
-          )}
-          
           <div className="flex items-center gap-2">
             <label htmlFor="period-multiplier" className="text-sm text-muted-foreground whitespace-nowrap">
               <span className="hidden sm:inline">Period Multiplier:</span>
@@ -673,67 +633,6 @@ export function ProductsTable({ data, onDataChange, onReplaceFile }: ProductsTab
             <span className="text-sm text-muted-foreground">K</span>
           </div>
         </div>
-        
-        {/* Password Dialog */}
-        {showPasswordDialog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="rounded-lg border border-primary/20 bg-card/95 backdrop-blur-sm p-6 shadow-lg w-full max-w-md mx-4">
-              <h4 className="text-lg font-semibold mb-4 text-foreground">Enter Password</h4>
-              <form onSubmit={(e) => {
-                e.preventDefault()
-                if (password === '1337') {
-                  setShowPasswordDialog(false)
-                  setPassword('')
-                  setPasswordError(null)
-                  fileInputRef.current?.click()
-                } else {
-                  setPasswordError('Incorrect password')
-                  setPassword('')
-                }
-              }} className="space-y-4">
-                <div>
-                  <Label htmlFor="replace-password" className="mb-2">Password</Label>
-                  <Input
-                    id="replace-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value)
-                      setPasswordError(null)
-                    }}
-                    placeholder="Enter password"
-                    autoFocus
-                    className="iron-border"
-                  />
-                  {passwordError && (
-                    <p className="text-sm text-red-400 mt-2">{passwordError}</p>
-                  )}
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowPasswordDialog(false)
-                      setPassword('')
-                      setPasswordError(null)
-                    }}
-                    className="iron-border"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="default"
-                    className="iron-border"
-                  >
-                    Submit
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

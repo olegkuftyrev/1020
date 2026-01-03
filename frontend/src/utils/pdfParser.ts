@@ -1,11 +1,10 @@
 import * as pdfjsLib from 'pdfjs-dist'
-// Импортируем worker как URL через Vite
-// @ts-ignore - Vite обрабатывает ?url для статических файлов
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-// Устанавливаем worker для Vite - используем встроенный worker из пакета
+// Устанавливаем worker - используем статический путь к файлу в public
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
+  // Используем статический путь к worker файлу из public директории
+  // Файл копируется в dist при сборке
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 }
 
 export interface ParsedPDFData {

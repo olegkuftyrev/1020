@@ -75,9 +75,15 @@ ignitor.tap(async (app) => {
       () => import('#middleware/container_bindings_middleware'),
     ])
     
+    // Apply auth middleware to all API routes (middleware will skip auth routes)
+    router.use([
+      () => import('#middleware/auth_middleware'),
+    ])
+    
     // Register routes before the server starts
     router.post('/api/auth/login', '#controllers/auth_controller.login')
     router.get('/api/auth/verify', '#controllers/auth_controller.verify')
+    router.post('/api/auth/logout', '#controllers/auth_controller.logout')
     
     // Products routes - specific routes must come before parameterized routes
     router.get('/api/products', '#controllers/products_controller.index')

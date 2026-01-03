@@ -49,20 +49,6 @@ function normalizeHeader(header: string): string {
   return normalized
 }
 
-/**
- * Normalize CSV data - clean values, handle empty strings
- */
-function _normalizeData(data: Record<string, string>[], headers: string[]): Record<string, string>[] {
-  return data.map(row => {
-    const normalizedRow: Record<string, string> = {}
-    headers.forEach(header => {
-      const value = row[header]
-      // Convert empty strings to dash, trim whitespace
-      normalizedRow[header] = value?.trim() || '-'
-    })
-    return normalizedRow
-  })
-}
 
 /**
  * Parse CSV file content and normalize headers and data
